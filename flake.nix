@@ -30,12 +30,12 @@
     llm-agents.url = "github:numtide/llm-agents.nix";
 
     nix-project-generator = {
-      url = "github:bizmythy/nix-project-template";
+      url = "github:drew-council/nix-project-template";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     weave = {
-      url = "github:bizmythy/weave/fix/rust-multiline-use-merge";
+      url = "github:drew-council/weave/fix/rust-multiline-use-merge";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -46,7 +46,7 @@
     };
 
     tuicr = {
-      url = "github:bizmythy/tuicr/bizmythy-tweaks";
+      url = "github:drew-council/tuicr/bizmythy-tweaks";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -67,7 +67,7 @@
     };
 
     topiary-nushell = {
-      url = "github:bizmythy/topiary-nushell-nix";
+      url = "github:drew-council/topiary-nushell-nix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
     };

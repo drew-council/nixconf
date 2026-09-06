@@ -745,13 +745,13 @@
       "locked": {
         "lastModified": 1787259174,
         "narHash": "sha256-gbksAsDN6IFn2K+30igiTUlLggkCr390whshQIdQlX8=",
-        "owner": "bizmythy",
+        "owner": "drew-council",
         "repo": "nix-project-template",
         "rev": "9af38bfa75311ceac8f61511d0410bb072793b97",
         "type": "github"
       },
       "original": {
-        "owner": "bizmythy",
+        "owner": "drew-council",
         "repo": "nix-project-template",
         "type": "github"
       }
@@ -1155,13 +1155,13 @@
       "locked": {
         "lastModified": 1786562018,
         "narHash": "sha256-G5JE71DDfwp6nVYC8P8R2SXumVBIeHF9KbECQ1TGSnY=",
-        "owner": "bizmythy",
+        "owner": "drew-council",
         "repo": "topiary-nushell-nix",
         "rev": "ebe8ccad72625d94969e4cc76875ed66ee64e2fe",
         "type": "github"
       },
       "original": {
-        "owner": "bizmythy",
+        "owner": "drew-council",
         "repo": "topiary-nushell-nix",
         "type": "github"
       }
@@ -1216,13 +1216,13 @@
       "locked": {
         "lastModified": 1788544497,
         "narHash": "sha256-LMQMNRpPnTd/TFgSZuZxLKVy9GwhuMJHigdnsLXvBUY=",
-        "owner": "bizmythy",
+        "owner": "drew-council",
         "repo": "tuicr",
         "rev": "d91224cfe0fbfae3fd5f7d91ac6192f88c38717e",
         "type": "github"
       },
       "original": {
-        "owner": "bizmythy",
+        "owner": "drew-council",
         "ref": "bizmythy-tweaks",
         "repo": "tuicr",
         "type": "github"
@@ -1258,13 +1258,13 @@
       "locked": {
         "lastModified": 1785346850,
         "narHash": "sha256-bCPcpwILzW6tI6L3G+EPx2YqBJ5ZbKROjIJtCy4D4vA=",
-        "owner": "bizmythy",
+        "owner": "drew-council",
         "repo": "weave",
         "rev": "b2a186642367604fbb6515cd4957546d430849dc",
         "type": "github"
       },
       "original": {
-        "owner": "bizmythy",
+        "owner": "drew-council",
         "ref": "fix/rust-multiline-use-merge",
         "repo": "weave",
         "type": "github"

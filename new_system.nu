@@ -75,7 +75,7 @@ def "main install" [] {
 
   let git_user = {
     "user.email": "andrew.p.council@gmail.com"
-    "user.name": "bizmythy"
+    "user.name": "drew-council"
   }
 
   # set git user conf settings (temp, will come from home manager later)
@@ -86,7 +86,7 @@ def "main install" [] {
   # clone with https (will switch to proper ssh later)
   let conf = $env.HOME | path join "nixconf"
   if ($conf | path exists | not $in) {
-    git clone https://github.com/bizmythy/nixconf.git
+    git clone https://github.com/drew-council/nixconf.git
   }
   cd $conf
 
@@ -150,7 +150,7 @@ def "main configure" [] {
 
   say "switching nixconf to use ssh"
   cd ~/nixconf
-  git remote set-url origin git@github.com:bizmythy/nixconf.git
+  git remote set-url origin git@github.com:drew-council/nixconf.git
 
   def read [ref: string] {
     ^op --account L23KMYOBNVHLPGSIPDX7BAQ5LA read $ref
@@ -175,10 +175,10 @@ def "main configure" [] {
   }
 
   say "setting up zed"
-  clone-if-missing ($nu.home-dir | path join ".config" "zed") "git@github.com:bizmythy/zed.git"
+  clone-if-missing ($nu.home-dir | path join ".config" "zed") "git@github.com:drew-council/zed.git"
 
   say "setting up codex"
-  clone-if-missing ($nu.home-dir | path join ".codex") "git@github.com:bizmythy/codex-config.git"
+  clone-if-missing ($nu.home-dir | path join ".codex") "git@github.com:drew-council/codex-config.git"
 }
 
 def main [] {

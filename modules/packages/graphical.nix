@@ -80,6 +80,7 @@ in
         kdePackages.kdenlive
 
         spotify
+        ytmdesktop # desktop app for youtube music
         # calibre
         pdfarranger
 
@@ -88,8 +89,6 @@ in
         zed # alias
         vscodium
 
-        # failing to build, never use anyways
-        # warp-terminal
         alacritty
         ghostty
         kitty

@@ -89,7 +89,7 @@ let
     pyright
     uv
     ruff
-    ty
+    # ty # seems to be compiling from source?
 
     # Language tools
     markdown-oxide

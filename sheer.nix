@@ -18,5 +18,8 @@ in
 
     build --disk_cache=${cache}/disk-cache
     test  --disk_cache=${cache}/disk-cache
+    # Garbage-collect the disk cache in the background once the server idles,
+    # so it stays under this size instead of growing without bound.
+    common --experimental_disk_cache_gc_max_size=50G
   '';
 }

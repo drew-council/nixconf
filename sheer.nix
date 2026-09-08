@@ -8,9 +8,12 @@ in
 {
   # Bazel does not expand ~ or $HOME in .bazelrc, so every path is absolute.
   home.file.".bazelrc".text = ''
-    # One output_base reused by every worktree. Bazel locks the output_base, so
-    # concurrent invocations from different worktrees block on each other.
-    startup --output_base=${outputBaseRoot}/_bazel_${vars.user}/shared
+    # One output_base per worktree (hashed from the workspace path) under
+    # outputBaseRoot, so every worktree keeps its own long-lived server. A Bazel
+    # server is bound to a single workspace, so a shared output_base would make
+    # worktrees kill each other's server. Cross-worktree reuse comes from the
+    # content-addressed caches below instead.
+    startup --output_user_root=${outputBaseRoot}/_bazel_${vars.user}
 
     common --repository_cache=${cache}/repo-cache
     common --experimental_repository_cache_hardlinks

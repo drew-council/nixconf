@@ -9,6 +9,7 @@
   imports = [
     # keep-sorted start
     ../sheer.nix
+    ./keybindings.nix
     ./packages/terminal.nix
     ./programs
     ./scripts

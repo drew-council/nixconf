@@ -203,6 +203,7 @@ in
         aws.disabled = true;
         git_status.disabled = true;
         golang.disabled = true;
+        nodejs.disabled = true;
         cmake.disabled = true;
         buf.disabled = true;
         python.disabled = true;

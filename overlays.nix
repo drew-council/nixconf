@@ -90,6 +90,35 @@ in
       meta.platforms = [ "x86_64-linux" ];
     };
 
+  # ytmdesktop 2.0.12 fixes a failure to hook YouTube Music that caused an
+  # endless "taking longer to start than expected" loading screen
+  # (https://github.com/ytmdesktop/ytmdesktop/issues/1807). Drop once nixpkgs bumps.
+  ytmdesktop =
+    let
+      newSrc = super.fetchFromGitHub {
+        owner = "ytmdesktop";
+        repo = "ytmdesktop";
+        tag = "v2.0.12";
+        leaveDotGit = true;
+        postFetch = ''
+          cd $out
+          git rev-parse HEAD > .COMMIT
+          find -name .git -print0 | xargs -0 rm -rf
+        '';
+        hash = "sha256-fT5UdJ9YYK3hXC8GkEeJ/LK1bCyXofcKA0aCJUnjZdk=";
+      };
+    in
+    super.ytmdesktop.overrideAttrs (oldAttrs: {
+      version = "2.0.12";
+      src = newSrc;
+      yarnOfflineCache = super.yarn-berry_4.fetchYarnBerryDeps {
+        src = newSrc;
+        missingHashes = oldAttrs.missingHashes;
+        patches = oldAttrs.patches;
+        hash = "sha256-fpvBE4QZcDaWGgqU3jQlOe+bOLtnDEVNR4IuKBo35BQ=";
+      };
+    });
+
   # this package takes an *extremely* long time to check through all the files
   catppuccin-papirus-folders = super.catppuccin-papirus-folders.overrideAttrs (
     finalAttrs: previousAttrs: {

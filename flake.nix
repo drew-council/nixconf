@@ -275,6 +275,7 @@
         );
         topiary-nushell = inputs.topiary-nushell.packages.${pkgs.stdenv.hostPlatform.system}.default;
         linear-cli = pkgs.linear-cli;
+        ntn = pkgs.ntn;
       });
 
       formatter = eachSystem (pkgs: treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
@@ -285,6 +286,9 @@
           formatting = treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
           linear-cli = pkgs.runCommand "linear-cli-check" { nativeBuildInputs = [ pkgs.linear-cli ]; } ''
             linear --version > "$out"
+          '';
+          ntn = pkgs.runCommand "ntn-check" { nativeBuildInputs = [ pkgs.ntn ]; } ''
+            ntn --version > "$out"
           '';
         }
         // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {

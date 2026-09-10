@@ -53,6 +53,7 @@ let
     atac
     tdx
     linear-cli
+    ntn
     secretspec
     clinfo
     rust-stakeholder

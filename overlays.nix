@@ -68,6 +68,8 @@ in
     };
   nu-plugin-toon = super.callPackage ./pkgs/nu_plugin_toon.nix { };
   linear-cli = super.callPackage ./pkgs/linear-cli.nix { };
+
+  ntn = super.callPackage ./pkgs/ntn.nix { };
   nh-cachix = super.callPackage ./pkgs/nh-cachix.nix { };
 
   amd-ctk = super.callPackage ./pkgs/amd-ctk.nix { };

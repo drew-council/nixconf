@@ -35,7 +35,7 @@
     };
 
     weave = {
-      url = "github:drew-council/weave/fix/rust-multiline-use-merge";
+      url = "github:drew-council/weave/drew-council-tweaks";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     };

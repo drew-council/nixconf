@@ -1256,16 +1256,16 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1785346850,
-        "narHash": "sha256-bCPcpwILzW6tI6L3G+EPx2YqBJ5ZbKROjIJtCy4D4vA=",
+        "lastModified": 1789047951,
+        "narHash": "sha256-PD+T9ikY4MOqScpeiy7jWUGQi4fsd4OHymNPDL4zAiQ=",
         "owner": "drew-council",
         "repo": "weave",
-        "rev": "b2a186642367604fbb6515cd4957546d430849dc",
+        "rev": "d62fe9276263d1d42f37f408e858659653986a61",
         "type": "github"
       },
       "original": {
         "owner": "drew-council",
-        "ref": "fix/rust-multiline-use-merge",
+        "ref": "drew-council-tweaks",
         "repo": "weave",
         "type": "github"
       }

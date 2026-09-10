@@ -20,6 +20,7 @@ let
   publicKeyFiles = builtins.mapAttrs genKeyFile publicKeys;
 
   onePassPath = vcs.onePassword.agentSocket;
+  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   weavePackage = inputs.weave.packages.${pkgs.stdenv.hostPlatform.system}.default;
   weaveExtensions = [
     "ts"
@@ -161,8 +162,8 @@ in
           };
         };
 
-        # 1password ssh commit signing
-        commit.gpgsign = true;
+        # 1password ssh commit signing (disabled on macOS)
+        commit.gpgsign = !isDarwin;
       }
       // personalConfig; # set default to personal
     };

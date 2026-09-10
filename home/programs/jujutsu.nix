@@ -25,7 +25,8 @@ in
       git = {
         colocate = true;
         # Avoid a 1Password prompt after every history rewrite.
-        sign-on-push = true;
+        # Signing is disabled entirely on macOS.
+        sign-on-push = !pkgs.stdenv.hostPlatform.isDarwin;
       };
 
       signing = {

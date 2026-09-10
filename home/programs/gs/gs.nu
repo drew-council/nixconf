@@ -45,14 +45,17 @@ def stack-review [] {
   }
   let stack = ($view.stdout | from json)
 
-  # merged layers already live on trunk, nothing left to review
+  # merged layers already live on trunk, nothing left to review.
+  # `head` in the json output is the last recorded head, which lags behind the
+  # branch after new commits, so resolve the live tip from the ref instead.
   let layers = (
     $stack.branches
     | where isMerged == false
     | each {|layer|
+      let head = (^git rev-parse --verify $"refs/heads/($layer.name)" | str trim)
       {
         branch: $layer.name
-        commits: (^git rev-list --count $"($layer.base)..($layer.head)" | into int)
+        commits: (^git rev-list --count $"($layer.base)..($head)" | into int)
         pr: (
           if ($layer.pr? | is-not-empty) {
             $"#($layer.pr.number) ($layer.pr.state | str lowercase)"
@@ -70,7 +73,7 @@ def stack-review [] {
           | str join " "
         )
         base: $layer.base
-        head: $layer.head
+        head: $head
       }
     }
   )

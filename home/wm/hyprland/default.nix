@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   osConfig,
@@ -42,6 +43,7 @@ let
       monitorLayoutPoke = lib.getExe monitorLayoutPoke;
       monitorProfileSelector = "hypr-monitor-profile";
       switchaudio = lib.getExe switchaudio;
+      voxtype = lib.getExe config.services.voxtype.package;
     };
     catppuccin = {
       mauve = "rgba(cba6f7ff)";

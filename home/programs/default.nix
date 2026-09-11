@@ -29,6 +29,7 @@
     ./op.nix
     ./spotify-player.nix
     ./vesktop.nix
+    ./voxtype.nix
   ];
 
   programs = {

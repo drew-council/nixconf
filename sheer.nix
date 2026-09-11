@@ -25,6 +25,7 @@ in
       bazel_8
       delve
       firebase-tools
+      gnumake # everything is driven through the repo Makefile
       google-cloud-sdk
       opentofu
       pnpm_10 # repo pins packageManager pnpm@10.x

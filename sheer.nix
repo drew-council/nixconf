@@ -1,4 +1,10 @@
-{ platform, vars, ... }:
+{
+  lib,
+  pkgs,
+  platform,
+  vars,
+  ...
+}:
 
 let
   cache = "${vars.home}/.cache/bazel";
@@ -6,6 +12,22 @@ let
   outputBaseRoot = if platform.isDarwin then "/private/var/tmp" else "/var/tmp";
 in
 {
+  # Tools from the sheer repo's Brewfile / scripts/setup.sh that are not
+  # already installed globally (buf, go, gopls, nodejs 24, and docker-buildx
+  # come from home/packages/terminal.nix).
+  home.packages = with pkgs; [
+    bazelisk
+    # Homebrew symlinks bazel -> bazelisk; the nixpkgs package only ships
+    # a bazelisk binary, so provide the bazel name ourselves.
+    (writeShellScriptBin "bazel" ''exec ${lib.getExe bazelisk} "$@"'')
+    delve
+    firebase-tools
+    google-cloud-sdk
+    opentofu
+    pnpm_10 # repo pins packageManager pnpm@10.x
+    pulumi
+  ];
+
   # Bazel does not expand ~ or $HOME in .bazelrc, so every path is absolute.
   home.file.".bazelrc".text = ''
     # One output_base per worktree (hashed from the workspace path) under

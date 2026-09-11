@@ -10,6 +10,13 @@ let
   cache = "${vars.home}/.cache/bazel";
   # Time Machine skips /var/tmp, so macOS keeps the large output_base there.
   outputBaseRoot = if platform.isDarwin then "/private/var/tmp" else "/var/tmp";
+  # bazelisk 1.29.0 ships a stray bin/sha256sum (a Go test helper) that
+  # collides with uutils-coreutils in the Home Manager buildEnv. Drop it.
+  bazelisk = pkgs.bazelisk.overrideAttrs (old: {
+    postInstall = (old.postInstall or "") + ''
+      rm -f $out/bin/sha256sum
+    '';
+  });
 in
 {
   # Tools from the sheer repo's Brewfile / scripts/setup.sh that are not
@@ -18,6 +25,7 @@ in
   home.packages =
     with pkgs;
     [
+      # Note: `bazelisk` here refers to the sha256sum-free override in `let`.
       # Use bazelisk (as the repo's Brewfile does) so the exact upstream release
       # pinned in .bazelversion runs. nixpkgs bazel_8 is not a drop-in: it embeds
       # the label "8.7.0- (@non-git)" instead of "8.7.0", which lands in

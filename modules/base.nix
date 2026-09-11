@@ -14,6 +14,7 @@ in
   imports = [
     inputs.home-manager.nixosModules.default
     ./displaymanager.nix
+    ./fhs-shebangs.nix
     ./herdr-web.nix
     ./laptop.nix
     ./nvidia.nix

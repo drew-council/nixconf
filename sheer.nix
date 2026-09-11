@@ -17,6 +17,33 @@ let
       rm -f $out/bin/sha256sum
     '';
   });
+
+  # PATH handed to Bazel actions on NixOS. The repo sets
+  # --incompatible_strict_action_env, so actions otherwise get
+  # /bin:/usr/bin:/usr/local/bin, which on NixOS holds only sh and env. Bazel
+  # also forwards --action_env to repository rules, so the cc toolchain
+  # autodetection needs to find gcc and binutils here too. Keep the list small:
+  # the PATH string is part of every action's cache key.
+  bazelActionPath = lib.makeBinPath (
+    with pkgs;
+    [
+      bash
+      coreutils
+      findutils
+      gnugrep
+      gnused
+      gawk
+      diffutils
+      gnutar
+      gzip
+      which
+      file
+      git
+      python3
+      gcc
+      binutils
+    ]
+  );
 in
 {
   # Tools from the sheer repo's Brewfile / scripts/setup.sh that are not
@@ -45,9 +72,16 @@ in
       pnpm_10 # repo pins packageManager pnpm@10.x
       pulumi
     ]
-    # C compiler for cgo and Bazel's cc toolchain autodetection. On macOS the
-    # Xcode CLT clang fills this role; a nixpkgs gcc would shadow it on PATH.
-    ++ lib.optionals platform.isLinux [ pkgs.gcc ];
+    ++ lib.optionals platform.isLinux [
+      # C compiler for cgo outside Bazel (e.g. golangci-lint via `go tool`). On
+      # macOS the Xcode CLT clang fills this role; a nixpkgs gcc would shadow
+      # it on PATH. Inside Bazel the compiler comes from bazelActionPath.
+      pkgs.gcc
+      # `bazel run` of py_binary targets (e.g. //:format's multirun) execs the
+      # rules_python stub with the client PATH; its `#!/usr/bin/env python3`
+      # needs any python3 there before it re-execs the hermetic interpreter.
+      pkgs.python3
+    ];
 
   # Bazel does not expand ~ or $HOME in .bazelrc, so every path is absolute.
   home.file.".bazelrc".text = ''
@@ -67,5 +101,25 @@ in
     # Garbage-collect the disk cache in the background once the server idles,
     # so it stays under this size instead of growing without bound.
     common --experimental_disk_cache_gc_max_size=50G
+  ''
+  # NixOS lacks the FHS layout the repo's toolchains assume. Together with
+  # modules/fhs-shebangs.nix (which provides /bin/bash and /usr/bin/python3
+  # for actions that run with no PATH at all) this is what makes `make
+  # format`, `make generate`, `bazel run` and `bazel test` work on Linux.
+  + lib.optionalString platform.isLinux ''
+
+    # `bazel run` execs --shell_executable (default /bin/bash) to launch the
+    # target: "FATAL: execv of '/bin/bash' failed".
+    build --shell_executable=${lib.getExe pkgs.bash}
+    # Target and exec ("[for tool]") configurations each need the PATH.
+    build --action_env=PATH=${bazelActionPath}
+    build --host_action_env=PATH=${bazelActionPath}
+    # MODULE.bazel registers toolchains_llvm, whose prebuilt clang has no
+    # sysroot and so cannot find libc headers (stdio.h) on NixOS. Prefer
+    # Bazel's autodetected local toolchain, i.e. the gcc from bazelActionPath.
+    # --extra_toolchains wins over register_toolchains. The label is the
+    # canonical bzlmod name of rules_cc's cc_configure extension repo; it is
+    # not visible under an apparent name from the main module.
+    build --extra_toolchains=@@rules_cc++cc_configure_extension+local_config_cc_toolchains//:all
   '';
 }

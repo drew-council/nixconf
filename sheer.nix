@@ -18,11 +18,17 @@ in
   home.packages =
     with pkgs;
     [
-      # The repo's Brewfile uses bazelisk, but nixpkgs bazel_8 currently matches
-      # the pinned .bazelversion (8.7.0) exactly, so use it instead of letting
-      # bazelisk download an upstream binary at runtime. Plain bazel ignores
-      # .bazelversion, so keep these in sync manually when the repo bumps it.
-      bazel_8
+      # Use bazelisk (as the repo's Brewfile does) so the exact upstream release
+      # pinned in .bazelversion runs. nixpkgs bazel_8 is not a drop-in: it embeds
+      # the label "8.7.0- (@non-git)" instead of "8.7.0", which lands in
+      # @bazel_features_version//:version.bzl and changes the transitive .bzl
+      # digest of every module extension loading bazel_features, so the committed
+      # MODULE.bazel.lock reads as stale under --lockfile_mode=error. On Linux
+      # the downloaded binary runs via programs.nix-ld (modules/base.nix).
+      bazelisk
+      # Homebrew symlinks bazel -> bazelisk; the nixpkgs package only ships
+      # a bazelisk binary, so provide the bazel name ourselves.
+      (writeShellScriptBin "bazel" ''exec ${lib.getExe bazelisk} "$@"'')
       delve
       firebase-tools
       gnumake # everything is driven through the repo Makefile

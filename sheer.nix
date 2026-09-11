@@ -1,5 +1,4 @@
 {
-  lib,
   pkgs,
   platform,
   vars,
@@ -16,10 +15,11 @@ in
   # already installed globally (buf, go, gopls, nodejs 24, and docker-buildx
   # come from home/packages/terminal.nix).
   home.packages = with pkgs; [
-    bazelisk
-    # Homebrew symlinks bazel -> bazelisk; the nixpkgs package only ships
-    # a bazelisk binary, so provide the bazel name ourselves.
-    (writeShellScriptBin "bazel" ''exec ${lib.getExe bazelisk} "$@"'')
+    # The repo's Brewfile uses bazelisk, but nixpkgs bazel_8 currently matches
+    # the pinned .bazelversion (8.7.0) exactly, so use it instead of letting
+    # bazelisk download an upstream binary at runtime. Plain bazel ignores
+    # .bazelversion, so keep these in sync manually when the repo bumps it.
+    bazel_8
     delve
     firebase-tools
     google-cloud-sdk

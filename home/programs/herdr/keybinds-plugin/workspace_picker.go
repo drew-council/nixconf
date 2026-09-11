@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	stdcontext "context"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 const workspacePickerEntrypoint = "new-workspace-picker"
@@ -183,9 +185,23 @@ func sortWorkspaceChoices(choices []workspaceChoice) {
 	})
 }
 
+// zoxideRankTimeout bounds the zoxide query. Ranking is only cosmetic, so the
+// picker must never block on it.
+const zoxideRankTimeout = 750 * time.Millisecond
+
 // zoxideDirectoryRanks returns known directories in zoxide priority order.
+//
+// --all makes zoxide skip its per-entry existence check. Without it, an entry
+// under a stalled network automount (for example an NFS share that is down)
+// leaves zoxide stuck in uninterruptible disk sleep and the picker blank.
+// Unavailable entries are harmless: ranks only order choices that were
+// already found under $HOME. The timeout and WaitDelay guard against zoxide
+// hanging for any other reason, since a D-state child ignores SIGKILL.
 func zoxideDirectoryRanks() map[string]int {
-	cmd := exec.Command("zoxide", "query", "--list")
+	ctx, cancel := stdcontext.WithTimeout(stdcontext.Background(), zoxideRankTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "zoxide", "query", "--list", "--all")
+	cmd.WaitDelay = 100 * time.Millisecond
 	output, err := cmd.Output()
 	if err != nil {
 		return nil

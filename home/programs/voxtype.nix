@@ -46,6 +46,8 @@ in
   services.voxtype = {
     enable = true;
     package = voxtype;
+    # Give the daemon's output drivers (wtype, wl-copy) access to the session.
+    wayland.display = "wayland-1";
     # Deliberately no loadModels: remote-only, no model downloads or local inference.
     settings = {
       state_file = "auto";
@@ -54,10 +56,14 @@ in
       whisper = {
         mode = "remote";
         remote_endpoint = "https://api.openai.com";
-        remote_model = "gpt-transcribe";
         remote_timeout_secs = 120;
         language = "auto";
         translate = false;
+        # Sent to the remote backend. The daemon's ModelManager overrides
+        # remote_model with this field, so both must be set for the daemon and
+        # the `voxtype transcribe` subcommand to agree on the model.
+        model = "gpt-transcribe";
+        remote_model = "gpt-transcribe";
       };
       output = {
         mode = "type";

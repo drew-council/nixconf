@@ -19,7 +19,9 @@
     opnix.url = "github:brizzbuzz/opnix";
 
     catppuccin.url = "github:catppuccin/nix";
-    hyprland.url = "github:hyprwm/Hyprland";
+    # Keep the numeric workspace IPC used by upstream Waybar. The next commit,
+    # e9e2f64 (#16140), removes IDs in favor of address/type and breaks tracking.
+    hyprland.url = "github:hyprwm/Hyprland/7ebf13abb3c391604c60c9f627c7a403bcec8d17";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
 
     zen-browser = {

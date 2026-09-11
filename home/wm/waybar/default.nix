@@ -40,6 +40,17 @@ in
 
   programs.waybar = {
     enable = true;
+    # Upstream Lua dispatcher support is not in nixpkgs' Waybar 0.15.0:
+    # without this revision, workspace buttons send invalid legacy commands.
+    # Pair with the pre-address/type Hyprland revision pinned in flake.nix.
+    package = (pkgs.waybar.override { cavaSupport = false; }).overrideAttrs (_: {
+      src = pkgs.fetchFromGitHub {
+        owner = "Alexays";
+        repo = "Waybar";
+        rev = "05945748dccce28bf96d26d8f64a9e69a8dd49ba";
+        hash = "sha256-51R3mIt8cLNvh/X5qe9vOqeJCj0U9KRyemVE5y+OhiU=";
+      };
+    });
     style = ./waybar.css;
     settings.mainBar = {
       # "layer" = "top"; # Waybar at top layer

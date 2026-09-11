@@ -124,6 +124,7 @@
           user = "drew";
           inherit home defaults;
           flakePath = "${home}/nixconf";
+          workDir = "${home}/work";
           hmBackupFileExtension = "hmbackup";
           lockScreenPic = builtins.fetchurl {
             url = "https://filedn.com/l0xkAHTdfcEJNc2OW7dfBny/lockscreen.png";

@@ -1,6 +1,12 @@
 {
   lib,
   pkgs,
+  # Workspace root directory names under $HOME, injected into the binary via
+  # -ldflags -X. Downstream of vars.workDir; see home/programs/herdr/default.nix.
+  workspaceRoots ? [
+    "personal"
+    "work"
+  ],
 }:
 
 pkgs.buildGo126Module {
@@ -9,6 +15,8 @@ pkgs.buildGo126Module {
 
   src = ./.;
   vendorHash = "sha256-7K17JaXFsjf163g5PXCb5ng2gYdotnZ2IDKk8KFjNj0=";
+
+  ldflags = [ "-X main.workspaceRoots=${lib.concatStringsSep "," workspaceRoots}" ];
 
   nativeBuildInputs = [ pkgs.makeWrapper ];
 

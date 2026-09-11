@@ -1,7 +1,7 @@
 #!/usr/bin/env nu
 
 const REPO = "sheerhealth/sheer"
-const REPO_DIR = "~/repos/sheer"
+const REPO_DIR = "@workDir@/sheer"
 const REVIEW_TEAMS = [go-readability api-readability build-readability]
 const JSON_FIELDS = "number,title,url,author,updatedAt"
 

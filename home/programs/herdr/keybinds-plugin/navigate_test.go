@@ -12,7 +12,7 @@ func TestFallbackWorkspaceFollowsSidebarWorktreeOrder(t *testing.T) {
 					"workspace_id": "nixconf",
 					"worktree": map[string]any{
 						"is_linked_worktree": false,
-						"repo_key":           "/repos/nixconf/.git",
+						"repo_key":           "/work/nixconf/.git",
 					},
 				},
 				map[string]any{
@@ -24,7 +24,7 @@ func TestFallbackWorkspaceFollowsSidebarWorktreeOrder(t *testing.T) {
 					"workspace_id": "macos",
 					"worktree": map[string]any{
 						"is_linked_worktree": true,
-						"repo_key":           "/repos/nixconf/.git",
+						"repo_key":           "/work/nixconf/.git",
 					},
 				},
 			},

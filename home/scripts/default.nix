@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  vars,
   ...
 }:
 let
@@ -18,8 +19,16 @@ let
   # make a script with binary name based on script name
   getName = filename: builtins.elemAt (lib.splitString "." filename) 0;
   getPath = filename: scriptDir + "/${filename}";
+  # Scripts can reference vars via @token@ placeholders, e.g. @workDir@.
+  substitutions = {
+    "@workDir@" = vars.workDir;
+  };
+  substitute =
+    text:
+    lib.replaceStrings (builtins.attrNames substitutions) (builtins.attrValues substitutions) text;
   makeScript =
-    filename: pkgs.writeScriptBin (getName filename) (builtins.readFile (getPath filename));
+    filename:
+    pkgs.writeScriptBin (getName filename) (substitute (builtins.readFile (getPath filename)));
 in
 {
   home.packages = map makeScript enabledScripts;

@@ -14,6 +14,10 @@ import (
 
 const workspacePickerEntrypoint = "new-workspace-picker"
 
+// workspaceRoots is a comma-separated list of workspace root directory names
+// under $HOME, overridable at build time via -ldflags -X.
+var workspaceRoots = "personal,work"
+
 // workspaceChoice is one selectable workspace candidate for the picker.
 type workspaceChoice struct {
 	Display string
@@ -36,7 +40,7 @@ func (c *client) newWorkspacePicker(fzf string) error {
 		return err
 	}
 
-	choices, err := workspaceChoicesFor(home, []string{"personal", "repos"}, extraWorkspaceChoices(home))
+	choices, err := workspaceChoicesFor(home, workspaceRootNames(), extraWorkspaceChoices(home))
 	if err != nil {
 		return err
 	}
@@ -53,6 +57,11 @@ func (c *client) newWorkspacePicker(fzf string) error {
 	}
 
 	return c.openOrFocusWorkspace(selected.Path, workspaceLabelForPath(selected.Path))
+}
+
+// workspaceRootNames splits the build-time workspaceRoots string into names.
+func workspaceRootNames() []string {
+	return strings.Split(workspaceRoots, ",")
 }
 
 // extraWorkspaceChoices returns picker choices outside the standard workspace roots.

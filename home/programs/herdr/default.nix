@@ -2,13 +2,19 @@
   config,
   lib,
   pkgs,
+  vars,
   ...
 }:
 
 let
   json = pkgs.formats.json { };
   toml = pkgs.formats.toml { };
-  keybindsPlugin = pkgs.herdr-keybinds;
+  keybindsPlugin = pkgs.herdr-keybinds.override {
+    workspaceRoots = [
+      "personal"
+      (baseNameOf vars.workDir)
+    ];
+  };
   pluginId = "drew.herdr-keybinds";
   pluginDir = "herdr/plugins/${pluginId}";
   actionContexts = [

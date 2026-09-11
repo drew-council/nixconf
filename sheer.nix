@@ -1,4 +1,5 @@
 {
+  lib,
   pkgs,
   platform,
   vars,
@@ -14,19 +15,24 @@ in
   # Tools from the sheer repo's Brewfile / scripts/setup.sh that are not
   # already installed globally (buf, go, gopls, nodejs 24, and docker-buildx
   # come from home/packages/terminal.nix).
-  home.packages = with pkgs; [
-    # The repo's Brewfile uses bazelisk, but nixpkgs bazel_8 currently matches
-    # the pinned .bazelversion (8.7.0) exactly, so use it instead of letting
-    # bazelisk download an upstream binary at runtime. Plain bazel ignores
-    # .bazelversion, so keep these in sync manually when the repo bumps it.
-    bazel_8
-    delve
-    firebase-tools
-    google-cloud-sdk
-    opentofu
-    pnpm_10 # repo pins packageManager pnpm@10.x
-    pulumi
-  ];
+  home.packages =
+    with pkgs;
+    [
+      # The repo's Brewfile uses bazelisk, but nixpkgs bazel_8 currently matches
+      # the pinned .bazelversion (8.7.0) exactly, so use it instead of letting
+      # bazelisk download an upstream binary at runtime. Plain bazel ignores
+      # .bazelversion, so keep these in sync manually when the repo bumps it.
+      bazel_8
+      delve
+      firebase-tools
+      google-cloud-sdk
+      opentofu
+      pnpm_10 # repo pins packageManager pnpm@10.x
+      pulumi
+    ]
+    # C compiler for cgo and Bazel's cc toolchain autodetection. On macOS the
+    # Xcode CLT clang fills this role; a nixpkgs gcc would shadow it on PATH.
+    ++ lib.optionals platform.isLinux [ pkgs.gcc ];
 
   # Bazel does not expand ~ or $HOME in .bazelrc, so every path is absolute.
   home.file.".bazelrc".text = ''

@@ -175,6 +175,21 @@ func (c *client) currentPaneFor(paneID string) (paneInfo, error) {
 	return result.Pane, nil
 }
 
+// focusPane focuses paneID through the public pane.focus endpoint.
+//
+// Herdr 0.9.0 only re-applies tab geometry after socket requests on a fixed
+// allow-list (pane.focus, pane.zoom, pane.split, ...). plugin.pane.open and
+// plugin.pane.close are not on it, so an overlay keeps the PTY size it was
+// split from instead of the zoomed full-tab size (herdrdev/herdr#3799).
+// Focusing the pane afterwards forces the server to resize every pane in the
+// viewed tab to its real geometry.
+func (c *client) focusPane(paneID string) error {
+	if paneID == "" {
+		return errors.New("pane id cannot be empty")
+	}
+	return c.call("pane.focus", map[string]any{"pane_id": paneID}, nil)
+}
+
 // panes lists panes, optionally scoped to one workspace.
 func (c *client) panes(workspaceID string) ([]paneInfo, error) {
 	params := map[string]any{}
@@ -334,7 +349,10 @@ func herdrConfigDir() (string, error) {
 }
 
 // openPluginOverlay opens a helper-owned plugin pane in overlay placement.
-func (c *client) openPluginOverlay(entrypoint string, cwd string, out any) error {
+//
+// The returned result is populated whenever the open succeeded, even if the
+// follow-up geometry nudge failed, so callers can still track the pane.
+func (c *client) openPluginOverlay(entrypoint string, cwd string) (pluginPaneOpenResult, error) {
 	params := map[string]any{
 		"entrypoint": entrypoint,
 		"focus":      true,
@@ -345,5 +363,17 @@ func (c *client) openPluginOverlay(entrypoint string, cwd string, out any) error
 		params["cwd"] = cwd
 	}
 
-	return c.call("plugin.pane.open", params, out)
+	var result pluginPaneOpenResult
+	if err := c.call("plugin.pane.open", params, &result); err != nil {
+		return result, err
+	}
+	// Work around herdrdev/herdr#3799: plugin.pane.open leaves the overlay at
+	// the size of the pane it was split from. pane.focus makes the server
+	// re-apply geometry, resizing the zoomed overlay to the full tab.
+	if paneID := result.PluginPane.Pane.PaneID; paneID != "" {
+		if err := c.focusPane(paneID); err != nil {
+			return result, fmt.Errorf("resize %s overlay: %w", entrypoint, err)
+		}
+	}
+	return result, nil
 }

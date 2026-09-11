@@ -8,7 +8,8 @@ func (c *client) openNewWorkspace() error {
 	if err != nil {
 		return err
 	}
-	return c.openPluginOverlay(workspaceCreatorEntrypoint, activePaneCWD(pane), nil)
+	_, err = c.openPluginOverlay(workspaceCreatorEntrypoint, activePaneCWD(pane))
+	return err
 }
 
 // newWorkspace is reserved for the next job's workspace creation workflow.

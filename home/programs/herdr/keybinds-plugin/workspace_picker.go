@@ -30,7 +30,8 @@ func (c *client) openWorkspacePicker() error {
 	if err != nil {
 		return err
 	}
-	return c.openPluginOverlay(workspacePickerEntrypoint, activePaneCWD(pane), nil)
+	_, err = c.openPluginOverlay(workspacePickerEntrypoint, activePaneCWD(pane))
+	return err
 }
 
 // newWorkspacePicker runs fzf and opens or focuses the selected workspace.

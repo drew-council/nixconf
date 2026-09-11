@@ -30,7 +30,10 @@ func (c *client) togglePopup(name string) error {
 		if closeErr != nil {
 			return closeErr
 		}
-		return saveErr
+		if saveErr != nil {
+			return saveErr
+		}
+		return c.refocusAfterPopupClose()
 	}
 
 	paneIDs, err := c.popupPaneIDs(state, name)
@@ -54,19 +57,37 @@ func (c *client) togglePopup(name string) error {
 		return fmt.Errorf("could not resolve workspace cwd for %s overlay", name)
 	}
 
-	var result pluginPaneOpenResult
-	if err := c.openPluginOverlay(name, cwd, &result); err != nil {
-		return err
-	}
+	// Track the pane even when the post-open geometry nudge fails, so the next
+	// toggle can still close it.
+	result, openErr := c.openPluginOverlay(name, cwd)
 	openedPane := result.PluginPane.Pane
 	if openedPane.PaneID == "" {
+		if openErr != nil {
+			return openErr
+		}
 		return savePluginState(statePath, state)
 	}
 	if state.PopupPanes == nil {
 		state.PopupPanes = make(map[string]map[string]string)
 	}
 	state.PopupPanes[name] = map[string]string{openedPane.PaneID: openedPane.PaneID}
-	return savePluginState(statePath, state)
+	saveErr = savePluginState(statePath, state)
+	if openErr != nil {
+		return openErr
+	}
+	return saveErr
+}
+
+// refocusAfterPopupClose re-applies tab geometry once an overlay is gone.
+// plugin.pane.close does not trigger a resize either, so panes that were
+// hidden behind the overlay while the terminal changed size would otherwise
+// stay stale. Best effort: the popup is already closed at this point.
+func (c *client) refocusAfterPopupClose() error {
+	pane, err := c.currentPaneFor("")
+	if err != nil || pane.PaneID == "" {
+		return nil
+	}
+	return c.focusPane(pane.PaneID)
 }
 
 func (c *client) popupPaneIDs(state pluginState, name string) ([]string, error) {

@@ -49,7 +49,7 @@ in
         lxqt.pcmanfm-qt
 
         thunderbird # email
-        libreoffice-qt6-fresh # office suite
+        libreoffice-qt-stable # office suite
         # marktext # markdown wysiwyg editor
         kdePackages.okular # pdf viewer
         system-config-printer

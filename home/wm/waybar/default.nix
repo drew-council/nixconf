@@ -40,21 +40,6 @@ in
 
   programs.waybar = {
     enable = true;
-    package = pkgs.waybar.overrideAttrs (old: {
-      src = pkgs.fetchFromGitHub {
-        owner = "Alexays";
-        repo = "Waybar";
-        rev = "05945748dccce28bf96d26d8f64a9e69a8dd49ba";
-        hash = "sha256-51R3mIt8cLNvh/X5qe9vOqeJCj0U9KRyemVE5y+OhiU=";
-      };
-      mesonFlags =
-        (builtins.filter (flag: flag != "-Dcava=enabled" && flag != "-Dtests=enabled") old.mesonFlags)
-        ++ [
-          "-Dcava=disabled"
-          "-Dtests=disabled"
-        ];
-      doCheck = false;
-    });
     style = ./waybar.css;
     settings.mainBar = {
       # "layer" = "top"; # Waybar at top layer
@@ -94,6 +79,7 @@ in
         disable-scroll = true;
         all-outputs = true;
         warp-on-scroll = false;
+        sort-by = "number";
         # format = "{name}: {icon}";
         # format-icons = {
         #   1 = ""

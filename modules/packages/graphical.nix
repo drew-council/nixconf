@@ -56,6 +56,7 @@ in
 
         # browsers
         inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.helium-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
         google-chrome
         # firefox in home manager
 

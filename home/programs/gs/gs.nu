@@ -7,7 +7,7 @@ const aliases = "@aliases@"
 # subcommands implemented here rather than by `gh stack`
 const local_commands = [
   {name: "review" description: "Pick stack layers and review their commits in tuicr"}
-  {name: "P" description: "Rebase then push the stack"}
+  {name: "P" description: "Sync the stack, pruning merged branches"}
 ]
 
 def pick-subcommand [] {
@@ -116,10 +116,7 @@ def --wrapped main [...args: string] {
 
   match $subcommand {
     "review" => { stack-review }
-    "P" => {
-      ^gh stack rebase
-      ^gh stack push
-    }
+    "P" => { ^gh stack sync --prune }
     _ => {
       ^gh stack ($aliases | get -o $subcommand | default $subcommand) ...$rest
     }

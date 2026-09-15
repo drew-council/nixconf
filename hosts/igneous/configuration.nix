@@ -8,6 +8,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./silksong-archipelago.nix
   ];
 
   boot = {

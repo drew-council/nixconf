@@ -15,6 +15,7 @@ in
         "${config.catppuccin.sources.glamour}/catppuccin-${config.catppuccin.flavor}.json"
       else
         "dark";
+    pager = true;
     width = 100;
   };
 }

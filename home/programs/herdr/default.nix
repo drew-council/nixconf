@@ -14,6 +14,7 @@ let
       "personal"
       (baseNameOf vars.workDir)
     ];
+    sheerRepo = "${vars.workDir}/sheer";
   };
   pluginId = "drew.herdr-keybinds";
   pluginDir = "herdr/plugins/${pluginId}";
@@ -107,8 +108,8 @@ let
     }
     {
       id = "new-workspace";
-      key = "prefix+d";
-      title = "New workspace";
+      key = "prefix+n";
+      title = "New sheer worktree";
       command = keybindsCommand "new-workspace-popup" [ ];
     }
   ];
@@ -201,7 +202,8 @@ let
       ];
       # rename_tab = "prefix+shift+t";
       # previous_tab = "prefix+p";
-      # next_tab = "prefix+n";
+      # prefix+n is assigned to the custom sheer worktree action.
+      next_tab = "";
       # switch_tab = "prefix+1..9";
       # switch_workspace = "";   # optional indexed binding, e.g. "prefix+shift+1..9"
       close_tab = [
@@ -449,7 +451,7 @@ let
         }
         {
           id = "new-workspace-creator";
-          title = "New workspace";
+          title = "New sheer worktree";
           placement = "overlay";
           command = loginShellCommand [
             (lib.getExe keybindsPlugin)

@@ -7,6 +7,8 @@
     "personal"
     "work"
   ],
+  # Main checkout used by the dedicated sheer worktree creation action.
+  sheerRepo ? "",
 }:
 
 pkgs.buildGo126Module {
@@ -16,7 +18,10 @@ pkgs.buildGo126Module {
   src = ./.;
   vendorHash = "sha256-7K17JaXFsjf163g5PXCb5ng2gYdotnZ2IDKk8KFjNj0=";
 
-  ldflags = [ "-X main.workspaceRoots=${lib.concatStringsSep "," workspaceRoots}" ];
+  ldflags = [
+    "-X main.workspaceRoots=${lib.concatStringsSep "," workspaceRoots}"
+    "-X main.sheerRepo=${sheerRepo}"
+  ];
 
   nativeBuildInputs = [ pkgs.makeWrapper ];
 
@@ -32,6 +37,7 @@ pkgs.buildGo126Module {
       --prefix PATH : "${
         lib.makeBinPath [
           pkgs.fzf
+          pkgs.git
           pkgs.zoxide
         ]
       }"

@@ -91,6 +91,24 @@ func promptSheerWorktreeName(input io.Reader, output io.Writer) (string, error) 
 	return name, nil
 }
 
+// clearBranchUpstream drops the upstream Git configures when a branch starts
+// from a remote-tracking ref. Herdr leaves branches from its own worktree
+// creation untracked, so without this pull, push, and status would all treat
+// main as the new branch's upstream.
+func clearBranchUpstream(repo string, branch string) error {
+	if !branchHasUpstream(repo, branch) {
+		return nil
+	}
+	return runGit(repo, "branch", "--unset-upstream", branch)
+}
+
+// branchHasUpstream reports whether the branch has tracking configured, since
+// git branch --unset-upstream fails when there is nothing to unset.
+func branchHasUpstream(repo string, branch string) bool {
+	command := exec.Command("git", "-C", repo, "config", "--get", "branch."+branch+".merge")
+	return command.Run() == nil
+}
+
 // runGit runs a Git operation against the canonical sheer checkout while
 // keeping command output visible in the creator overlay.
 func runGit(repo string, args ...string) error {
@@ -120,6 +138,9 @@ func (c *client) createSheerWorktree(name string) error {
 		"label":  name,
 	}, &result); err != nil {
 		return err
+	}
+	if err := clearBranchUpstream(sheerRepo, branch); err != nil {
+		return fmt.Errorf("unset upstream for %s: %w", branch, err)
 	}
 	if result.Worktree.OpenWorkspaceID == "" {
 		return fmt.Errorf("created worktree %q did not have an open workspace", branch)

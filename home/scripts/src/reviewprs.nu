@@ -12,16 +12,23 @@ def require_herdr [] {
 }
 
 def open_prs []: list<any> -> nothing {
-  # Open each PR in a new Herdr tab.
-  $in | each {|pr|
-    let tab = (herdr tab create --label $pr.title --no-focus | from json)
+  let prs = $in
+  $prs | each {|pr|
+    let tab = (herdr tab create --label $"($pr.number)" --no-focus | from json)
     let pane_id = $tab.result.root_pane.pane_id
     herdr pane run $pane_id $"tuicr pr ($pr.url)"
+  } | ignore
+  let n = ($prs | length)
+  if $n == 1 {
+    print "1 PR opened as a tab"
+  } else {
+    print $"($n) PRs opened as tabs"
   }
 }
 
 # Open PRs awaiting review from one of my readability teams.
-def prs [limit: int] {
+def prs [limit: int, --drafts] {
+  let drafts_clause = (if $drafts { "" } else { " draft:false" })
   $REVIEW_TEAMS
   | par-each {|team|
     (
@@ -29,7 +36,7 @@ def prs [limit: int] {
       --repo $REPO
       --state open
       --limit $limit
-      --search $"-author:@me team-review-requested:SheerHealth/($team)"
+      --search $"-author:@me($drafts_clause) team-review-requested:SheerHealth/($team)"
       --json $JSON_FIELDS
     )
     | from json
@@ -39,26 +46,37 @@ def prs [limit: int] {
   | sort-by updatedAt --reverse
 }
 
-def main [--limit: int = 200] {
+def main [--limit: int = 200, --drafts] {
   require_herdr
   cd $REPO_DIR
 
-  let candidates = (prs $limit)
+  let candidates = (prs $limit --drafts=$drafts)
 
   if ($candidates | is-empty) {
     print -e "no pull requests awaiting review"
     exit 1
   }
 
-  (
-    $candidates |
-    # format for input display
-    upsert "display" {|pr|
-      $"@($pr.author.login | fill --alignment left --width 20)($pr.title)"
-    } |
-    # get user selection ("a" for all)
-    input list --multi --display "display" | reverse | open_prs
+  let selected = (
+    $candidates
+    | each {|pr|
+      {
+        author: $"@($pr.author.login)"
+        number: $pr.number
+        title: $pr.title
+      }
+    }
+    | input list --multi
+    | each {|sel|
+      $candidates | where number == $sel.number | first
+    }
   )
+
+  if ($selected | is-empty) {
+    exit 0
+  }
+
+  $selected | reverse | open_prs
 }
 
 def normalize_pr_ref [raw: string] {

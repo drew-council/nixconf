@@ -83,7 +83,14 @@ let
       sample_rate = 16000;
       inherit (sharedSettings.audio) max_duration_secs;
     };
-    hotkey.enabled = true; # No compositor bindings on macOS; use the global hotkey.
+    hotkey = {
+      enabled = true; # No compositor bindings on macOS; use the global hotkey.
+      # Push-to-talk on right Option (Discord style). NOTE: voxtype's macOS
+      # hotkey backend matches single keys only -- modifiers in config are
+      # ignored there, so combos like Cmd+R are impossible (and a bare letter
+      # would fire on every keystroke).
+      key = "RIGHTALT";
+    };
     whisper = sharedSettings.whisper;
     output = sharedSettings.output // {
       # No driver_order: macOS types natively via the Quartz event tap.

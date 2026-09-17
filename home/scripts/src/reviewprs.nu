@@ -27,7 +27,7 @@ def open_prs []: list<any> -> nothing {
 }
 
 # Open PRs awaiting review from one of my readability teams.
-def prs [limit: int, --drafts] {
+def prs [limit: int --drafts] {
   let drafts_clause = (if $drafts { "" } else { " draft:false" })
   $REVIEW_TEAMS
   | par-each {|team|
@@ -46,7 +46,7 @@ def prs [limit: int, --drafts] {
   | sort-by updatedAt --reverse
 }
 
-def main [--limit: int = 200, --drafts] {
+def main [--limit: int = 200 --drafts] {
   require_herdr
   cd $REPO_DIR
 

@@ -187,11 +187,12 @@
               imports = [
                 inputs.nix-index-database.homeModules.default
                 inputs.nixvim.homeModules.nixvim
+                # Darwin-aware: retrieves secrets during HM activation, no systemd.
+                inputs.opnix.homeManagerModules.default
                 ./home
               ]
               ++ lib.optionals isLinux [
                 inputs.catppuccin.homeModules.catppuccin
-                inputs.opnix.homeManagerModules.default
               ];
             };
           };

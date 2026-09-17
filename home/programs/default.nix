@@ -19,6 +19,7 @@
     ./lazygit.nix
     ./nvim.nix
     ./tuicr
+    ./voxtype.nix
     # keep-sorted end
   ]
   ++ lib.optionals platform.isLinux [
@@ -29,7 +30,6 @@
     ./op.nix
     ./spotify-player.nix
     ./vesktop.nix
-    ./voxtype.nix
   ];
 
   programs = {

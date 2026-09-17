@@ -36,4 +36,18 @@
 
   # Determinate owns the Nix daemon and its settings.
   nix.enable = false;
+
+  # Declarative Homebrew: voxtype has no darwin build in nixpkgs, and the
+  # upstream cask is the supported distribution (universal binary, quarantine
+  # handled by the cask). cleanup stays "none" so hand-installed formulae are
+  # untouched; only the tap/casks below are managed.
+  homebrew = {
+    enable = true;
+    taps = [
+      "peteonrails/voxtype"
+    ];
+    casks = [
+      "peteonrails/voxtype/voxtype"
+    ];
+  };
 }

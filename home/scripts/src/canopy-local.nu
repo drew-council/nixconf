@@ -49,10 +49,10 @@ def ensure-adc [] {
 }
 
 def main [
-  ...test_ids: string  # with --staging, rows to seed from staging as TableName:ID
-  --staging            # seed payers (and any named rows) from staging
-  --proxies            # with --staging, also seed proxies
-  --focus              # switch to the new tab instead of leaving it in the background
+  ...test_ids: string # with --staging, rows to seed from staging as TableName:ID
+  --staging # seed payers (and any named rows) from staging
+  --proxies # with --staging, also seed proxies
+  --focus # switch to the new tab instead of leaving it in the background
 ] {
   if ($env.HERDR_ENV? | default "") != "1" {
     fail "not running inside Herdr"
@@ -90,14 +90,33 @@ def main [
 
   let focus_flag = if $focus { "--focus" } else { "--no-focus" }
 
-  let tab = (herdr-json [
-    tab create --workspace $workspace.workspace_id --cwd $repo --label "canopy local" $focus_flag
-  ])
+  let tab = (
+    herdr-json [
+      tab
+      create
+      --workspace
+      $workspace.workspace_id
+      --cwd
+      $repo
+      --label
+      "canopy local"
+      $focus_flag
+    ]
+  )
   let api_pane = $tab.root_pane.pane_id
 
-  let canopy_pane = (herdr-json [
-    pane split $api_pane --direction right --no-focus --cwd $canopy
-  ]).pane.pane_id
+  let canopy_pane = (
+    herdr-json [
+      pane
+      split
+      $api_pane
+      --direction
+      right
+      --no-focus
+      --cwd
+      $canopy
+    ]
+  ).pane.pane_id
 
   ^herdr pane rename $api_pane "api (cmd/local)" | ignore
   ^herdr pane rename $canopy_pane "canopy (pnpm dev)" | ignore

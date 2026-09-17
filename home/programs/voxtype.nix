@@ -50,6 +50,9 @@ let
     # Deliberately no loadModels: remote-only, no model downloads or local inference.
     whisper = {
       mode = "remote";
+      # Both nixpkgs 0.6.6 and the cask 0.7.5 append /v1/audio/transcriptions to
+      # the endpoint unconditionally (0.7.5's TUI help text misleadingly shows
+      # "https://api.openai.com/v1"; its own unit tests append the path).
       remote_endpoint = "https://api.openai.com";
       remote_timeout_secs = 120;
       language = "auto";
@@ -70,8 +73,31 @@ let
       };
     };
   };
+
+  # The Homebrew cask ships 0.7.5, where [hotkey], [audio], and [output] are
+  # required tables (no serde defaults), [audio] must carry device/sample_rate,
+  # and driver_order must be omitted (None -> platform default chain).
+  darwinSettings = sharedSettings // {
+    audio = {
+      device = "default";
+      sample_rate = 16000;
+      inherit (sharedSettings.audio) max_duration_secs;
+    };
+    hotkey.enabled = true; # No compositor bindings on macOS; use the global hotkey.
+    whisper = sharedSettings.whisper;
+    output = sharedSettings.output // {
+      # No driver_order: macOS types natively via the Quartz event tap.
+      notification = sharedSettings.output.notification;
+    };
+    osd.enabled = false; # voxtype-osd is not shipped in the cask.
+  };
 in
 {
+  # NOTE: keep this module a single attrset with mkIf guards. Splitting
+  # platform-specific definitions into `// lib.optionalAttrs` attrsets is a
+  # trap: `//` is a shallow merge, so a block defining `home.packages` clobbers
+  # every other `home.*` definition (home.file, sessionVariables, ...).
+
   programs.onepassword-secrets = {
     # op.nix owns the shared enable + tokenFile on Linux; stand the module up
     # for darwin here so only the voxtype secret is declared on the Mac.
@@ -85,26 +111,14 @@ in
     };
   };
 
-  # Linux normally gets this file from the HM systemd service module
-  # (services.voxtype.settings), which does not exist on darwin.
-  xdg.configFile."voxtype/config.toml" = lib.mkIf platform.isDarwin {
-    source = (pkgs.formats.toml { }).generate "voxtype-config.toml" (
-      sharedSettings
-      // {
-        # No compositor bindings on macOS; use the built-in global hotkey.
-        # Requires one-time Microphone + Input Monitoring grants in System
-        # Settings for whatever runs the daemon.
-        hotkey.enabled = true;
-        output = sharedSettings.output // {
-          # macOS types natively via CGEvent; wtype/clipboard are Wayland tools.
-          driver_order = [ ];
-        };
-      }
-    );
+  # Linux gets its config from the HM systemd service module
+  # (services.voxtype.settings). On darwin the cask reads the config from the
+  # macOS Application Support path, not ~/.config/voxtype/.
+  home.file."Library/Application Support/voxtype/config.toml" = lib.mkIf platform.isDarwin {
+    source = (pkgs.formats.toml { }).generate "voxtype-config.toml" darwinSettings;
   };
-}
-// lib.optionalAttrs platform.isLinux {
-  services.voxtype = {
+
+  services.voxtype = lib.mkIf platform.isLinux {
     enable = true;
     package = voxtype;
     # Give the daemon's output drivers (wtype, wl-copy) access to the session.
@@ -119,31 +133,30 @@ in
       };
     };
   };
-}
-// lib.optionalAttrs platform.isDarwin {
+
   # launchd agent replaces the HM systemd user service, which is Linux-only.
-  launchd.agents.voxtype = {
+  launchd.agents.voxtype = lib.mkIf platform.isDarwin {
     enable = true;
+    # ProgramArguments only: HM's waitForNixStore wrapper concatenates Program
+    # into the argument list, which would duplicate the binary path.
     config = {
-      Program = "${voxtype}/bin/voxtype";
       ProgramArguments = [
         "${voxtype}/bin/voxtype"
         "daemon"
       ];
       RunAtLoad = true;
-      KeepAlive = {
-        Crashed = true;
-        SuccessfulExit = false;
-      };
+      KeepAlive = true; # Always restart; daemon exits 0 on SIGTERM during rebuilds.
       StandardOutPath = "${config.home.homeDirectory}/Library/Logs/voxtype/stdout.log";
       StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/voxtype/stderr.log";
     };
   };
 
-  home.packages = [ voxtype ];
+  home.packages = lib.optionals platform.isDarwin [ voxtype ];
 
   # launchd does not create parent directories for the log paths above.
-  home.activation.createVoxtypeLogDir = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
-    mkdir -p "${config.home.homeDirectory}/Library/Logs/voxtype"
-  '';
+  home.activation.createVoxtypeLogDir = lib.mkIf platform.isDarwin (
+    lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
+      mkdir -p "${config.home.homeDirectory}/Library/Logs/voxtype"
+    ''
+  );
 }

@@ -43,6 +43,10 @@ let
       url = "https://calendar.google.com";
     }
     {
+      name = "Google Chat";
+      url = "https://chat.google.com";
+    }
+    {
       name = "T3 Chat";
       url = "https://t3.chat";
     }

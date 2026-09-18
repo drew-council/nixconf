@@ -16,7 +16,7 @@ pkgs.buildGo126Module {
   version = "0.1.0";
 
   src = ./.;
-  vendorHash = "sha256-7K17JaXFsjf163g5PXCb5ng2gYdotnZ2IDKk8KFjNj0=";
+  vendorHash = "sha256-fAtJppivYjsq0gV6juPZOMX5M+08vh8tCPjLmg5tV8E=";
 
   ldflags = [
     "-X main.workspaceRoots=${lib.concatStringsSep "," workspaceRoots}"

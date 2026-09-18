@@ -10,14 +10,15 @@ import (
 	"testing"
 )
 
-func TestPromptSheerWorktreeNameOmitsBranchPrefixFromLabel(t *testing.T) {
+func TestPromptSheerWorktreeNameKeepsEnteredBranchVerbatim(t *testing.T) {
 	for _, test := range []struct {
 		input string
 		want  string
 	}{
 		{input: "feature-name\n", want: "feature-name"},
-		{input: "drew/feature-name\n", want: "feature-name"},
-		{input: "  feature-name  \n", want: "feature-name"},
+		{input: "drew/feature-name\n", want: "drew/feature-name"},
+		{input: "  drew/feature-name  \n", want: "drew/feature-name"},
+		{input: "drew/\n", want: ""},
 		{input: "\n", want: ""},
 	} {
 		t.Run(strings.TrimSpace(test.input), func(t *testing.T) {
@@ -29,14 +30,14 @@ func TestPromptSheerWorktreeNameOmitsBranchPrefixFromLabel(t *testing.T) {
 			if got != test.want {
 				t.Fatalf("promptSheerWorktreeName() = %q, want %q", got, test.want)
 			}
-			if !strings.Contains(output.String(), sheerBranchPrefix) {
-				t.Fatalf("prompt output %q does not show branch prefix %q", output.String(), sheerBranchPrefix)
+			if !strings.Contains(output.String(), "enter worktree name") {
+				t.Fatalf("prompt output %q does not show the worktree prompt", output.String())
 			}
 		})
 	}
 }
 
-func TestCreateSheerWorktreeUsesPrefixedBranchAndStartsSetup(t *testing.T) {
+func TestCreateSheerWorktreeBranchesFromMainAndStartsSetup(t *testing.T) {
 	client, requests, stop := newTestClient(t, []testAPIResponse{
 		{Result: map[string]any{
 			"type": "worktree_created",
@@ -65,14 +66,17 @@ func TestCreateSheerWorktreeUsesPrefixedBranchAndStartsSetup(t *testing.T) {
 	sheerRepo = "/tmp/sheer"
 	defer func() { sheerRepo = oldSheerRepo }()
 
+	// Without scripting, the stub git exits 0 with empty output, so ls-remote
+	// finds no upstream branch and config --get finds no upstream tracking.
 	gitCalls := stubGit(t, "")
 
-	if err := client.newWorkspaceFrom(strings.NewReader("feature-name\n"), io.Discard); err != nil {
+	if err := client.newWorkspaceFrom(strings.NewReader("drew/feature-name\n"), io.Discard); err != nil {
 		t.Fatal(err)
 	}
 	wantGitCalls := []string{
 		"-C /tmp/sheer check-ref-format --branch drew/feature-name",
 		"-C /tmp/sheer fetch origin main",
+		"-C /tmp/sheer ls-remote --heads origin drew/feature-name",
 		"-C /tmp/sheer config --get branch.drew/feature-name.merge",
 		"-C /tmp/sheer branch --unset-upstream drew/feature-name",
 	}
@@ -112,7 +116,7 @@ func TestCreateSheerWorktreeUsesPrefixedBranchAndStartsSetup(t *testing.T) {
 	if run.Method != "pane.send_input" {
 		t.Fatalf("setup method = %q, want pane.send_input", run.Method)
 	}
-	wantSetup := `gh stack init "drew/feature-name"; pnpm install`
+	wantSetup := `if ((gh stack view --json | complete).exit_code == 0) { print 'Branch already has a stack; skipping init' } else { gh stack init "drew/feature-name" }; pnpm install`
 	if run.Params["pane_id"] != "w2:p1" || run.Params["text"] != wantSetup {
 		t.Fatalf("setup request = %#v, want %q in w2:p1", run.Params, wantSetup)
 	}
@@ -155,12 +159,13 @@ func TestCreateSheerWorktreeSkipsUnsetForUntrackedBranch(t *testing.T) {
 	// the state Herdr leaves behind once tracking is cleared.
 	gitCalls := stubGit(t, "case \"$*\" in *'config --get'*) exit 1 ;; esac\n")
 
-	if err := client.newWorkspaceFrom(strings.NewReader("feature-name\n"), io.Discard); err != nil {
+	if err := client.newWorkspaceFrom(strings.NewReader("drew/feature-name\n"), io.Discard); err != nil {
 		t.Fatal(err)
 	}
 	wantGitCalls := []string{
 		"-C /tmp/sheer check-ref-format --branch drew/feature-name",
 		"-C /tmp/sheer fetch origin main",
+		"-C /tmp/sheer ls-remote --heads origin drew/feature-name",
 		"-C /tmp/sheer config --get branch.drew/feature-name.merge",
 	}
 	if got := gitCalls(); !slices.Equal(got, wantGitCalls) {
@@ -168,8 +173,78 @@ func TestCreateSheerWorktreeSkipsUnsetForUntrackedBranch(t *testing.T) {
 	}
 }
 
+func TestCreateSheerWorktreeReusesExistingUpstreamBranch(t *testing.T) {
+	client, requests, stop := newTestClient(t, []testAPIResponse{
+		{Result: map[string]any{
+			"type": "worktree_created",
+			"worktree": map[string]any{
+				"branch":            "drew/feature-name",
+				"label":             "feature-name",
+				"open_workspace_id": "w2",
+				"path":              "/tmp/worktrees/sheer/drew-feature-name",
+			},
+		}},
+		{Result: map[string]any{
+			"type": "pane_list",
+			"panes": []any{
+				map[string]any{
+					"pane_id":      "w2:p1",
+					"tab_id":       "w2:t1",
+					"workspace_id": "w2",
+				},
+			},
+		}},
+		{Result: map[string]any{"type": "pane_input_sent"}},
+	})
+	defer stop()
+
+	oldSheerRepo := sheerRepo
+	sheerRepo = "/tmp/sheer"
+	defer func() { sheerRepo = oldSheerRepo }()
+
+	// ls-remote prints a ref, so the branch already exists upstream and must be
+	// reused instead of recreated from main.
+	gitCalls := stubGit(t, "case \"$*\" in *'ls-remote'*) printf 'refs/heads/drew/feature-name\\tabc123\\n' ;; esac\n")
+
+	if err := client.newWorkspaceFrom(strings.NewReader("drew/feature-name\n"), io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	wantGitCalls := []string{
+		"-C /tmp/sheer check-ref-format --branch drew/feature-name",
+		"-C /tmp/sheer fetch origin main",
+		"-C /tmp/sheer ls-remote --heads origin drew/feature-name",
+		"-C /tmp/sheer fetch origin drew/feature-name",
+	}
+	if got := gitCalls(); !slices.Equal(got, wantGitCalls) {
+		t.Fatalf("git calls = %q, want %q", got, wantGitCalls)
+	}
+
+	if len(*requests) != 3 {
+		t.Fatalf("captured %d requests, want 3", len(*requests))
+	}
+
+	create := (*requests)[0]
+	if create.Method != "worktree.create" {
+		t.Fatalf("first method = %q, want worktree.create", create.Method)
+	}
+	for key, want := range map[string]any{
+		// Growing the worktree from the existing upstream keeps its tracking,
+		// so no upstream clearing happens after creation.
+		"base":   "origin/drew/feature-name",
+		"branch": "drew/feature-name",
+		"cwd":    "/tmp/sheer",
+		"focus":  false,
+		"label":  "feature-name",
+	} {
+		if got := create.Params[key]; got != want {
+			t.Errorf("worktree.create %s = %#v, want %#v", key, got, want)
+		}
+	}
+}
+
 // stubGit puts a logging git on PATH and returns the recorded argument lines.
-// The extra script body runs after logging so tests can control exit codes.
+// The extra script body runs after logging so tests can control exit codes and
+// output.
 func stubGit(t *testing.T, script string) func() []string {
 	t.Helper()
 

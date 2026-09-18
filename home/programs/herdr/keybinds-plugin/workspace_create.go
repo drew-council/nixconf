@@ -15,7 +15,6 @@ const (
 	workspaceCreatorEntrypoint = "new-workspace-creator"
 	sheerBranchPrefix          = "drew/"
 	sheerBaseBranch            = "origin/main"
-	sheerSetupCommand          = "pnpm install"
 	workspacePaneWait          = 2 * time.Second
 	workspacePanePoll          = 50 * time.Millisecond
 )
@@ -123,7 +122,8 @@ func runGit(repo string, args ...string) error {
 }
 
 // createSheerWorktree delegates path selection and workspace registration to
-// Herdr, then starts repository setup in the new workspace's initial pane.
+// Herdr, then initializes a stack and installs dependencies in the new
+// workspace's initial pane.
 func (c *client) createSheerWorktree(name string) error {
 	branch := sheerBranchPrefix + name
 	var result struct {
@@ -150,7 +150,17 @@ func (c *client) createSheerWorktree(name string) error {
 	if err != nil {
 		return err
 	}
-	return c.runPane(pane.PaneID, sheerSetupCommand)
+	return c.runPane(pane.PaneID, sheerSetupCommand(branch))
+}
+
+// sheerSetupCommand adopts the already-created branch as the first stack layer
+// without letting gh stack open its interactive branch prompt.
+func sheerSetupCommand(branch string) string {
+	return "gh stack init " + quoteShellArg(branch) + " && pnpm install"
+}
+
+func quoteShellArg(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
 }
 
 // waitForWorkspacePane waits for Herdr to publish the initial pane created with

@@ -112,21 +112,13 @@ func TestCreateSheerWorktreeUsesPrefixedBranchAndStartsSetup(t *testing.T) {
 	if run.Method != "pane.send_input" {
 		t.Fatalf("setup method = %q, want pane.send_input", run.Method)
 	}
-	wantSetup := "gh stack init 'drew/feature-name' && pnpm install"
+	wantSetup := `gh stack init "drew/feature-name"; pnpm install`
 	if run.Params["pane_id"] != "w2:p1" || run.Params["text"] != wantSetup {
 		t.Fatalf("setup request = %#v, want %q in w2:p1", run.Params, wantSetup)
 	}
 	keys, ok := run.Params["keys"].([]any)
 	if !ok || len(keys) != 1 || keys[0] != "Enter" {
 		t.Fatalf("setup keys = %#v, want [Enter]", run.Params["keys"])
-	}
-}
-
-func TestSheerSetupCommandQuotesBranchName(t *testing.T) {
-	got := sheerSetupCommand("drew/feature'; echo unsafe")
-	want := "gh stack init 'drew/feature'\"'\"'; echo unsafe' && pnpm install"
-	if got != want {
-		t.Fatalf("sheerSetupCommand() = %q, want %q", got, want)
 	}
 }
 

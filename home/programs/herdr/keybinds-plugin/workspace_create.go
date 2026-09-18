@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -156,11 +157,7 @@ func (c *client) createSheerWorktree(name string) error {
 // sheerSetupCommand adopts the already-created branch as the first stack layer
 // without letting gh stack open its interactive branch prompt.
 func sheerSetupCommand(branch string) string {
-	return "gh stack init " + quoteShellArg(branch) + " && pnpm install"
-}
-
-func quoteShellArg(value string) string {
-	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
+	return "gh stack init " + strconv.Quote(branch) + "; pnpm install"
 }
 
 // waitForWorkspacePane waits for Herdr to publish the initial pane created with

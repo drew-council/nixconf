@@ -115,12 +115,16 @@ func newRootCommand() *cobra.Command {
 			},
 		},
 		&cobra.Command{
-			Use:   "new-workspace",
-			Short: "Create a new workspace",
-			Args:  cobra.NoArgs,
-			RunE: func(_ *cobra.Command, _ []string) error {
+			Use:   "sheer-workspace [fzf]",
+			Short: "Open or create a sheer worktree workspace",
+			Args:  cobra.MaximumNArgs(1),
+			RunE: func(_ *cobra.Command, args []string) error {
+				fzf := "fzf"
+				if len(args) == 1 {
+					fzf = args[0]
+				}
 				return runWithClient(func(c *client) error {
-					return c.newWorkspace()
+					return c.sheerWorkspacePicker(fzf)
 				})
 			},
 		},
@@ -136,13 +140,13 @@ func newRootCommand() *cobra.Command {
 			},
 		},
 		&cobra.Command{
-			Use:    "new-workspace-popup",
-			Short:  "Open workspace creation in a popup pane",
+			Use:    "sheer-workspace-popup",
+			Short:  "Open the sheer worktree picker in a popup pane",
 			Args:   cobra.NoArgs,
 			Hidden: true,
 			RunE: func(_ *cobra.Command, _ []string) error {
 				return runWithClient(func(c *client) error {
-					return c.openNewWorkspace()
+					return c.openSheerWorkspacePicker()
 				})
 			},
 		},

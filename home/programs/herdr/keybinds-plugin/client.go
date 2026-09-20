@@ -242,13 +242,19 @@ func (c *client) workspaces() ([]workspaceInfo, error) {
 
 // createWorkspace creates a focused Herdr workspace and returns its metadata.
 func (c *client) createWorkspace(cwd string, label string) (workspaceInfo, error) {
+	return c.createWorkspaceWithFocus(cwd, label, true)
+}
+
+// createWorkspaceWithFocus creates a Herdr workspace with explicit focus
+// behavior and returns its metadata.
+func (c *client) createWorkspaceWithFocus(cwd string, label string, focus bool) (workspaceInfo, error) {
 	var result struct {
 		Type      string        `json:"type"`
 		Workspace workspaceInfo `json:"workspace"`
 	}
 	if err := c.call("workspace.create", map[string]any{
 		"cwd":   cwd,
-		"focus": true,
+		"focus": focus,
 		"label": label,
 	}, &result); err != nil {
 		return workspaceInfo{}, err
@@ -261,8 +267,14 @@ func (c *client) createWorkspace(cwd string, label string) (workspaceInfo, error
 	if err != nil {
 		return workspaceInfo{}, err
 	}
+	wanted := filepath.Clean(cwd)
 	for _, workspace := range workspaces {
-		if workspace.Focused && workspace.Label == label {
+		if workspace.Worktree != nil && filepath.Clean(workspace.Worktree.CheckoutPath) == wanted {
+			return workspace, nil
+		}
+	}
+	for _, workspace := range workspaces {
+		if focus && workspace.Focused && workspace.Label == label {
 			return workspace, nil
 		}
 	}

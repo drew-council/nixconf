@@ -107,10 +107,10 @@ let
       command = keybindsCommand "open-workspace-popup" [ ];
     }
     {
-      id = "new-workspace";
-      key = "prefix+n";
-      title = "New sheer worktree";
-      command = keybindsCommand "new-workspace-popup" [ ];
+      id = "open-sheer-workspace";
+      key = "alt+s";
+      title = "Open or create sheer worktree";
+      command = keybindsCommand "sheer-workspace-popup" [ ];
     }
   ];
   keybindPluginActions = map (action: {
@@ -202,7 +202,6 @@ let
       ];
       # rename_tab = "prefix+shift+t";
       # previous_tab = "prefix+p";
-      # prefix+n is assigned to the custom sheer worktree action.
       next_tab = "";
       # switch_tab = "prefix+1..9";
       # switch_workspace = "";   # optional indexed binding, e.g. "prefix+shift+1..9"
@@ -450,12 +449,13 @@ let
           ];
         }
         {
-          id = "new-workspace-creator";
-          title = "New sheer worktree";
+          id = "sheer-workspace-picker";
+          title = "Open or create sheer worktree";
           placement = "overlay";
           command = loginShellCommand [
             (lib.getExe keybindsPlugin)
-            "new-workspace"
+            "sheer-workspace"
+            (lib.getExe pkgs.fzf)
           ];
         }
       ];

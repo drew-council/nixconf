@@ -1,30 +1,40 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/term"
 )
 
 const (
-	workspaceCreatorEntrypoint = "new-workspace-creator"
-	sheerBranchPrefix          = "drew/"
-	sheerBaseBranch            = "origin/main"
-	workspacePaneWait          = 2 * time.Second
-	workspacePanePoll          = 50 * time.Millisecond
+	sheerWorkspacePickerEntrypoint = "sheer-workspace-picker"
+	sheerBranchPrefix              = "drew/"
+	sheerBaseBranch                = "origin/main"
+	workspacePaneWait              = 2 * time.Second
+	workspacePanePoll              = 50 * time.Millisecond
 )
 
-// sheerRepo is injected by Nix from vars.workDir so this action always creates
+// sheerRepo is injected by Nix from vars.workDir so this action always manages
 // worktrees from the canonical checkout rather than whichever workspace is open.
 var sheerRepo string
+
+// existingWorktreeInfo is the subset returned by worktree.list needed by the
+// sheer workspace picker.
+type existingWorktreeInfo struct {
+	Branch           string `json:"branch"`
+	IsLinkedWorktree bool   `json:"is_linked_worktree"`
+	IsPrunable       bool   `json:"is_prunable"`
+	OpenWorkspaceID  string `json:"open_workspace_id"`
+	Path             string `json:"path"`
+}
 
 // createdWorktreeInfo is the subset returned by worktree.create that is needed
 // to start setup in the newly created workspace.
@@ -35,35 +45,170 @@ type createdWorktreeInfo struct {
 	Path            string `json:"path"`
 }
 
-// openNewWorkspace opens sheer worktree creation as an overlay.
-func (c *client) openNewWorkspace() error {
+// openSheerWorkspacePicker opens the combined sheer worktree picker and creator
+// as an overlay.
+func (c *client) openSheerWorkspacePicker() error {
 	pane, err := c.currentPane()
 	if err != nil {
 		return err
 	}
-	_, err = c.openPluginOverlay(workspaceCreatorEntrypoint, activePaneCWD(pane))
+	_, err = c.openPluginOverlay(sheerWorkspacePickerEntrypoint, activePaneCWD(pane))
 	return err
 }
 
-// newWorkspace prompts for a branch name, updates origin/main, and creates a
-// background Herdr worktree workspace. The name is used verbatim as the branch
-// while the workspace label omits a leading drew/ prefix.
-func (c *client) newWorkspace() error {
-	return c.newWorkspaceFrom(os.Stdin, os.Stdout)
-}
+// sheerWorkspacePicker chooses an existing Herdr-managed sheer worktree or
+// accepts a new branch name and runs the worktree creation workflow.
+func (c *client) sheerWorkspacePicker(fzf string) error {
+	if sheerRepo == "" {
+		return errors.New("sheer repository path is not configured")
+	}
 
-func (c *client) newWorkspaceFrom(input io.Reader, output io.Writer) error {
-	branch, err := promptSheerWorktreeName(input, output)
+	worktrees, err := c.sheerWorktrees()
+	if err != nil {
+		return err
+	}
+	branch, err := chooseSheerBranch(fzf, worktrees)
 	if err != nil {
 		return err
 	}
 	if branch == "" {
 		return nil
 	}
+
+	for _, worktree := range worktrees {
+		if worktree.Branch == branch {
+			workspaceID, err := c.ensureSheerMainWorkspace()
+			if err != nil {
+				return err
+			}
+			return c.openSheerWorktree(workspaceID, worktree)
+		}
+	}
+
+	return c.createSheerWorkspace(branch, os.Stdout)
+}
+
+// sheerWorktrees lists usable linked worktrees for the canonical sheer repo.
+// The primary checkout is excluded because alt+s is specifically for branch
+// workspaces beneath that checkout's Herdr workspace group.
+func (c *client) sheerWorktrees() ([]existingWorktreeInfo, error) {
+	var result struct {
+		Type      string                 `json:"type"`
+		Worktrees []existingWorktreeInfo `json:"worktrees"`
+	}
+	if err := c.call("worktree.list", map[string]any{"cwd": sheerRepo}, &result); err != nil {
+		return nil, err
+	}
+
+	worktrees := make([]existingWorktreeInfo, 0, len(result.Worktrees))
+	for _, worktree := range result.Worktrees {
+		if !worktree.IsLinkedWorktree || worktree.IsPrunable || worktree.Branch == "" {
+			continue
+		}
+		worktrees = append(worktrees, worktree)
+	}
+	sort.Slice(worktrees, func(i, j int) bool {
+		return worktrees[i].Branch < worktrees[j].Branch
+	})
+	return worktrees, nil
+}
+
+// chooseSheerBranch preloads fzf with full branch names and seeds its query
+// with drew/. Enter accepts the selected match, or the typed query when there
+// are no matches. Escape still cancels without returning a branch.
+func chooseSheerBranch(fzf string, worktrees []existingWorktreeInfo) (string, error) {
+	branches := make([]string, 0, len(worktrees))
+	for _, worktree := range worktrees {
+		branches = append(branches, worktree.Branch)
+	}
+
+	cmd := exec.Command(
+		fzf,
+		"--prompt=sheer branch> ",
+		"--query="+sheerBranchPrefix,
+		"--print-query",
+		"--bind=enter:accept-or-print-query",
+	)
+	cmd.Stdin = strings.NewReader(strings.Join(branches, "\n") + "\n")
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+
+	if err := cmd.Run(); err != nil {
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
+			return "", nil
+		}
+		return "", fmt.Errorf("run fzf: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimRight(stdout.String(), "\r\n"), "\n")
+	if len(lines) == 0 {
+		return "", nil
+	}
+	// --print-query writes the query first. A selected match, or the query
+	// emitted by accept-or-print-query when there is no match, comes last.
+	return normalizeSheerBranchName(lines[len(lines)-1]), nil
+}
+
+// normalizeSheerBranchName trims surrounding whitespace and treats a bare
+// prefix as an empty entry so confirming without edits cancels the picker.
+func normalizeSheerBranchName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == sheerBranchPrefix {
+		return ""
+	}
+	return name
+}
+
+// ensureSheerMainWorkspace returns the canonical checkout's primary Herdr
+// workspace, creating it in the background on main when it is not already open.
+func (c *client) ensureSheerMainWorkspace() (string, error) {
+	workspaces, err := c.workspaces()
+	if err != nil {
+		return "", err
+	}
+	wanted := filepath.Clean(sheerRepo)
+	for _, workspace := range workspaces {
+		if workspace.Worktree == nil || workspace.Worktree.IsLinkedWorktree {
+			continue
+		}
+		if filepath.Clean(workspace.Worktree.CheckoutPath) == wanted {
+			return workspace.WorkspaceID, nil
+		}
+	}
+
+	if err := runGit(sheerRepo, "switch", "main"); err != nil {
+		return "", fmt.Errorf("set canonical sheer checkout to main: %w", err)
+	}
+	workspace, err := c.createWorkspaceWithFocus(sheerRepo, filepath.Base(sheerRepo), false)
+	if err != nil {
+		return "", fmt.Errorf("open canonical sheer workspace: %w", err)
+	}
+	if workspace.WorkspaceID == "" {
+		return "", errors.New("canonical sheer workspace did not have an id")
+	}
+	return workspace.WorkspaceID, nil
+}
+
+// openSheerWorktree opens or focuses an existing checkout beneath the
+// canonical sheer workspace group. Its picker entry keeps drew/, while the
+// resulting workspace label omits it.
+func (c *client) openSheerWorktree(workspaceID string, worktree existingWorktreeInfo) error {
+	return c.call("worktree.open", map[string]any{
+		"focus":        true,
+		"label":        sheerBranchLabel(worktree.Branch),
+		"path":         worktree.Path,
+		"workspace_id": workspaceID,
+	}, nil)
+}
+
+// createSheerWorkspace updates origin/main and creates a background worktree
+// workspace. Existing remote branches are reused; otherwise the branch starts
+// from origin/main, matching the previous dedicated new-workspace workflow.
+func (c *client) createSheerWorkspace(branch string, output io.Writer) error {
 	if sheerRepo == "" {
 		return errors.New("sheer repository path is not configured")
 	}
-
 	if err := runGit(sheerRepo, "check-ref-format", "--branch", branch); err != nil {
 		return fmt.Errorf("invalid branch name %q: %w", branch, err)
 	}
@@ -82,111 +227,12 @@ func (c *client) newWorkspaceFrom(input io.Reader, output io.Writer) error {
 		base = "origin/" + branch
 	}
 
-	fmt.Fprintf(output, "Creating worktree for %s...\n", branch)
-	return c.createSheerWorktree(branch, base)
-}
-
-// promptSheerWorktreeName returns the branch name to create. On a terminal the
-// input starts prefilled with drew/, backspaced like any other character, so
-// the entry can also begin without it. Non-terminal input (tests, pipes) is
-// read line by line and used verbatim. An empty name cancels the prompt.
-func promptSheerWorktreeName(input io.Reader, output io.Writer) (string, error) {
-	fmt.Fprint(output, "\x1b[36menter worktree name:\x1b[0m ")
-
-	file, isFile := input.(*os.File)
-	if !isFile || !term.IsTerminal(int(file.Fd())) {
-		scanner := bufio.NewScanner(input)
-		if !scanner.Scan() {
-			return "", scanner.Err()
-		}
-		return normalizeSheerBranchName(scanner.Text()), nil
-	}
-
-	name, err := promptPrefilledLine(file, output)
-	if err != nil {
-		return "", err
-	}
-	return normalizeSheerBranchName(name), nil
-}
-
-// normalizeSheerBranchName trims surrounding whitespace and treats a bare
-// prefix as an empty entry so confirming without edits cancels the prompt.
-func normalizeSheerBranchName(name string) string {
-	name = strings.TrimSpace(name)
-	if name == sheerBranchPrefix {
-		return ""
-	}
-	return name
-}
-
-// promptPrefilledLine edits a line in raw terminal mode, seeded with drew/, so
-// every keystroke including backspaces applies to the prefix. Raw mode also
-// disables the terminal's echo, so the buffer is redrawn after each change.
-func promptPrefilledLine(file *os.File, output io.Writer) (string, error) {
-	fd := int(file.Fd())
-	oldState, err := term.MakeRaw(fd)
-	if err != nil {
-		return "", fmt.Errorf("enable raw mode for branch prompt: %w", err)
-	}
-	defer term.Restore(fd, oldState)
-
-	name := []rune(sheerBranchPrefix)
-	render := func() {
-		fmt.Fprintf(output, "\r\x1b[2K\x1b[36menter worktree name:\x1b[0m %s", string(name))
-	}
-	render()
-
-	reader := bufio.NewReader(file)
-	for {
-		char, _, err := reader.ReadRune()
-		if err != nil {
-			return "", err
-		}
-		switch char {
-		case '\r', '\n':
-			fmt.Fprint(output, "\r\n")
-			return string(name), nil
-		case 0x08, 0x7f: // backspace and delete
-			if len(name) > 0 {
-				name = name[:len(name)-1]
-				render()
-			}
-		case 0x03, 0x04: // ctrl-c and ctrl-d cancel
-			fmt.Fprint(output, "\r\n")
-			return "", nil
-		case 0x1b: // escape sequence; ignore it whole
-			if err := discardEscapeSequence(reader); err != nil {
-				return "", err
-			}
-		default:
-			if char < 0x20 {
-				continue
-			}
-			name = append(name, char)
-			render()
-		}
-	}
-}
-
-// discardEscapeSequence consumes one terminal escape sequence after a lone
-// ESC so arrow keys and similar input do not leak into the branch name.
-func discardEscapeSequence(reader *bufio.Reader) error {
-	next, _, err := reader.ReadRune()
+	workspaceID, err := c.ensureSheerMainWorkspace()
 	if err != nil {
 		return err
 	}
-	if next != '[' && next != 'O' {
-		return nil
-	}
-	for {
-		char, _, err := reader.ReadRune()
-		if err != nil {
-			return err
-		}
-		if char >= 0x40 && char <= 0x7e {
-			return nil
-		}
-	}
+	fmt.Fprintf(output, "Creating worktree for %s...\n", branch)
+	return c.createSheerWorktree(workspaceID, branch, base)
 }
 
 // clearBranchUpstream drops the upstream Git configures when a branch starts
@@ -232,17 +278,17 @@ func remoteBranchExists(repo string, branch string) bool {
 // Herdr, then initializes a stack and installs dependencies in the new
 // workspace's initial pane. base is the ref the branch grows from; when it is
 // origin/main the branch is new and Herdr's inherited tracking is cleared.
-func (c *client) createSheerWorktree(branch string, base string) error {
+func (c *client) createSheerWorktree(workspaceID string, branch string, base string) error {
 	var result struct {
 		Type     string              `json:"type"`
 		Worktree createdWorktreeInfo `json:"worktree"`
 	}
 	if err := c.call("worktree.create", map[string]any{
-		"base":   base,
-		"branch": branch,
-		"cwd":    sheerRepo,
-		"focus":  false,
-		"label":  sheerBranchLabel(branch),
+		"base":         base,
+		"branch":       branch,
+		"focus":        false,
+		"label":        sheerBranchLabel(branch),
+		"workspace_id": workspaceID,
 	}, &result); err != nil {
 		return err
 	}

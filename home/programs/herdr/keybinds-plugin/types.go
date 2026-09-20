@@ -31,20 +31,24 @@ func (tab tabInfo) isFocused() bool { return tab.Focused }
 // number returns the user-visible tab ordering number.
 func (tab tabInfo) number() int { return tab.Number }
 
-// worktreeInfo identifies workspaces Herdr displays in the same repository group.
-type worktreeInfo struct {
+// workspaceWorktreeInfo identifies workspaces Herdr displays in the same
+// repository group and records the checkout represented by each workspace.
+type workspaceWorktreeInfo struct {
+	CheckoutPath     string `json:"checkout_path"`
 	IsLinkedWorktree bool   `json:"is_linked_worktree"`
 	RepoKey          string `json:"repo_key"`
+	RepoName         string `json:"repo_name"`
+	RepoRoot         string `json:"repo_root"`
 }
 
 // workspaceInfo is the subset of Herdr workspace metadata needed here.
 type workspaceInfo struct {
-	ActiveTabID string        `json:"active_tab_id"`
-	Focused     bool          `json:"focused"`
-	Label       string        `json:"label"`
-	Number      int           `json:"number"`
-	WorkspaceID string        `json:"workspace_id"`
-	Worktree    *worktreeInfo `json:"worktree"`
+	ActiveTabID string                 `json:"active_tab_id"`
+	Focused     bool                   `json:"focused"`
+	Label       string                 `json:"label"`
+	Number      int                    `json:"number"`
+	WorkspaceID string                 `json:"workspace_id"`
+	Worktree    *workspaceWorktreeInfo `json:"worktree"`
 }
 
 // focusID returns the identifier used by workspace.focus.

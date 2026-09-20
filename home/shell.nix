@@ -27,22 +27,6 @@ let
   // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
     zed = "zeditor";
   };
-
-  # `atuin init nu` names both its ctrl-r and up-arrow keybindings "atuin",
-  # which recent nushell warns about on every startup.
-  atuinUpBinding = "name: atuin\n            modifier: none";
-  atuinNushellConfig =
-    pkgs.runCommand "atuin-nushell-config.nu"
-      {
-        nativeBuildInputs = [ pkgs.writableTmpDirAsHomeHook ];
-      }
-      ''
-        ${lib.getExe pkgs.atuin} init nu >> "$out"
-        substituteInPlace $out \
-          --replace-fail ${lib.escapeShellArg atuinUpBinding} ${
-            lib.escapeShellArg (lib.replaceStrings [ "name: atuin" ] [ "name: atuin_up" ] atuinUpBinding)
-          }
-      '';
 in
 {
   home = {
@@ -137,7 +121,6 @@ in
 
             source ${./utils.nu};
             use ${nuscripts}/modules/jc/
-            source ${atuinNushellConfig}
 
             nerdfetch
           '';
@@ -163,8 +146,7 @@ in
     atuin = {
       enable = true;
       enableZshIntegration = true;
-      # sourced manually below to deduplicate keybinding names
-      enableNushellIntegration = false;
+      enableNushellIntegration = true;
       enableBashIntegration = false;
       settings = {
         auto_sync = true;

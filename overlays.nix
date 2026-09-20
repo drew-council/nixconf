@@ -43,10 +43,7 @@ in
       package = inputs.tdx.packages.${super.stdenv.hostPlatform.system}.default;
     in
     if super.stdenv.hostPlatform.isLinux then
-      # Upstream uses macOS pbcopy/pbpaste; replace it with Wayland clipboard
-      # commands only on Linux.
       package.overrideAttrs (oldAttrs: {
-        patches = (oldAttrs.patches or [ ]) ++ [ ./pkgs/tdx-clipboard-linux.patch ];
         nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ super.makeWrapper ];
         postInstall = (oldAttrs.postInstall or "") + ''
           wrapProgram $out/bin/tdx \

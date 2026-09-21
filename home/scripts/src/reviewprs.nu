@@ -27,8 +27,9 @@ def open_prs []: list<any> -> nothing {
 }
 
 # Open PRs awaiting review from one of my readability teams.
-def prs [limit: int --drafts] {
+def prs [limit: int drafts: bool dependabot: bool] {
   let drafts_clause = (if $drafts { "" } else { " draft:false" })
+  let dependabot_clause = (if $dependabot { "" } else { " -author:app/dependabot" })
   $REVIEW_TEAMS
   | par-each {|team|
     (
@@ -36,7 +37,7 @@ def prs [limit: int --drafts] {
       --repo $REPO
       --state open
       --limit $limit
-      --search $"-author:@me($drafts_clause) team-review-requested:SheerHealth/($team)"
+      --search $"-author:@me($drafts_clause)($dependabot_clause) team-review-requested:SheerHealth/($team)"
       --json $JSON_FIELDS
     )
     | from json
@@ -46,11 +47,35 @@ def prs [limit: int --drafts] {
   | sort-by updatedAt --reverse
 }
 
-def main [--limit: int = 200 --drafts] {
+def my_login []: nothing -> string {
+  ^gh api user --jq .login | str trim
+}
+
+def has_approved [number: int login: string] {
+  ^gh pr view $number --repo $REPO --json reviews
+  | from json
+  | get reviews
+  | any {|review| $review.author?.login? == $login and $review.state == "APPROVED" }
+}
+
+def main [--limit: int = 200 --drafts --dependabot] {
   require_herdr
   cd $REPO_DIR
 
-  let candidates = (prs $limit --drafts=$drafts)
+  let candidates = (prs $limit $drafts $dependabot)
+
+  if ($candidates | is-empty) {
+    print -e "no pull requests awaiting review"
+    exit 1
+  }
+
+  let me = (my_login)
+  let candidates = (
+    $candidates
+    | par-each {|pr| {pr: $pr approved: (has_approved $pr.number $me)} }
+    | where {|it| not $it.approved }
+    | get pr
+  )
 
   if ($candidates | is-empty) {
     print -e "no pull requests awaiting review"

@@ -48,6 +48,12 @@ in
   # Determinate owns the Nix daemon and its settings.
   nix.enable = false;
 
+  # GUI apps from nixpkgs. nix-darwin links every .app in these packages into
+  # /Applications/Nix Apps during activation, so Spotlight/Launchpad find them.
+  environment.systemPackages = [
+    pkgs.ytmdesktop # desktop app for youtube music (linux uses the same package via modules/packages/graphical.nix)
+  ];
+
   # Declarative Homebrew: voxtype has no darwin build in nixpkgs, and the
   # upstream cask is the supported distribution (universal binary, quarantine
   # handled by the cask). cleanup stays "none" so hand-installed formulae are

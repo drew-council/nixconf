@@ -24,6 +24,57 @@ let
   # also forwards --action_env to repository rules, so the cc toolchain
   # autodetection needs to find gcc and binutils here too. Keep the list small:
   # the PATH string is part of every action's cache key.
+  # Bazel writes the workspace path into DO_NOT_BUILD_HERE in every output
+  # base, and each worktree gets its own output base (see .bazelrc below), so
+  # deleting a worktree strands an output base of several GiB. Nothing else
+  # ever reclaims them: 20 stranded bases once filled ~150 GiB. This walks the
+  # output_user_root and removes bases whose workspace is gone.
+  bazelprune = pkgs.writeScriptBin "bazelprune" ''
+    #!${lib.getExe pkgs.nushell}
+
+    # Delete Bazel output bases whose workspace directory no longer exists.
+    def main [--dry-run] {
+      let root = "${outputBaseRoot}/_bazel_${vars.user}"
+      if not ($root | path exists) {
+        return
+      }
+
+      let orphans = (
+        ls $root
+        | where type == dir
+        | each {|entry|
+            let marker = ($entry.name | path join "DO_NOT_BUILD_HERE")
+            if not ($marker | path exists) { return null }
+            let workspace = (open --raw $marker | str trim)
+            if ($workspace | path exists) { return null }
+            # Never pull an output base out from under a live server.
+            let pid_file = ($entry.name | path join "server" "server.pid.txt")
+            let pid = if ($pid_file | path exists) { open --raw $pid_file | str trim } else { "" }
+            if ($pid | is-not-empty) and (do { ^kill -0 $pid } | complete | get exit_code) == 0 {
+              return null
+            }
+            { base: $entry.name, workspace: $workspace }
+          }
+        | compact
+      )
+
+      if ($orphans | is-empty) {
+        print "No orphaned Bazel output bases."
+        return
+      }
+
+      for orphan in $orphans {
+        print $"($orphan.base): workspace ($orphan.workspace) is gone"
+        if not $dry_run {
+          # Bazel marks parts of the output tree read-only.
+          ^chmod -R u+w $orphan.base
+          rm --recursive --force --permanent $orphan.base
+        }
+      }
+    }
+  '';
+  bazelpruneLogDir = "${vars.home}/Library/Logs/bazelprune";
+
   bazelActionPath = lib.makeBinPath (
     with pkgs;
     [
@@ -71,6 +122,7 @@ in
       opentofu
       pnpm_10 # repo pins packageManager pnpm@10.x
       pulumi
+      bazelprune # also runs weekly, see launchd.agents / systemd.user.timers
     ]
     ++ lib.optionals platform.isLinux [
       # C compiler for cgo outside Bazel (e.g. golangci-lint via `go tool`). On
@@ -82,6 +134,46 @@ in
       # needs any python3 there before it re-execs the hermetic interpreter.
       pkgs.python3
     ];
+
+  # Weekly run of bazelprune. Worktrees come and go daily, so without this
+  # the stranded output bases quietly eat the disk.
+  launchd.agents.bazelprune = lib.mkIf platform.isDarwin {
+    enable = true;
+    config = {
+      ProgramArguments = [ "${bazelprune}/bin/bazelprune" ];
+      StartCalendarInterval = [
+        {
+          Weekday = 1;
+          Hour = 10;
+          Minute = 0;
+        }
+      ];
+      StandardOutPath = "${bazelpruneLogDir}/stdout.log";
+      StandardErrorPath = "${bazelpruneLogDir}/stderr.log";
+    };
+  };
+  # launchd does not create parent directories for the log paths above.
+  home.activation.createBazelpruneLogDir = lib.mkIf platform.isDarwin (
+    lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
+      mkdir -p "${bazelpruneLogDir}"
+    ''
+  );
+
+  systemd.user.services.bazelprune = lib.mkIf platform.isLinux {
+    Unit.Description = "Remove Bazel output bases whose workspace is gone";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${bazelprune}/bin/bazelprune";
+    };
+  };
+  systemd.user.timers.bazelprune = lib.mkIf platform.isLinux {
+    Unit.Description = "Weekly bazelprune";
+    Timer = {
+      OnCalendar = "weekly";
+      Persistent = true;
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
 
   # Bazel does not expand ~ or $HOME in .bazelrc, so every path is absolute.
   home.file.".bazelrc".text = ''

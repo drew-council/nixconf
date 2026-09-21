@@ -4,6 +4,17 @@
   vars,
   ...
 }:
+let
+  # Declarative login item for a /Applications GUI app: RunAtLoad fires the
+  # agent on every login, and `open -na` spawns the GUI app and returns
+  # immediately, letting launchd consider the agent started. The path is
+  # shell-quoted because the command runs via `sh -c` and app names may
+  # contain spaces (e.g. "Scroll Reverser").
+  loginItem = app: {
+    command = "/usr/bin/open -na ${lib.escapeShellArg "/Applications/${app}.app"}";
+    serviceConfig.RunAtLoad = true;
+  };
+in
 {
   networking.hostName = "macos";
 
@@ -48,6 +59,18 @@
     ];
     casks = [
       "peteonrails/voxtype/voxtype"
+      # Menu bar utilities that must start at login; see launchd.user.agents
+      # below for the login-item wiring.
+      "maccy"
+      "scroll-reverser"
     ];
+  };
+
+  # Login items for the casks above. Neither nix-darwin nor Home Manager
+  # (at the locked revisions) ships modules for these apps, so run them as
+  # user launchd agents instead (see loginItem above).
+  launchd.user.agents = {
+    maccy = loginItem "Maccy";
+    scroll-reverser = loginItem "Scroll Reverser";
   };
 }

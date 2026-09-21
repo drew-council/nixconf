@@ -27,17 +27,23 @@ def open_prs []: list<any> -> nothing {
 }
 
 # Open PRs awaiting review from one of my readability teams.
-def prs [limit: int drafts: bool dependabot: bool] {
+# With `all`, include every open PR matching the other filters regardless of reviewer.
+def prs [limit: int drafts: bool dependabot: bool all: bool] {
   let drafts_clause = (if $drafts { "" } else { " draft:false" })
   let dependabot_clause = (if $dependabot { "" } else { " -author:app/dependabot" })
+  let reviewer_clause = (if $all { "" } else { " team-review-requested:SheerHealth/{team}" })
   $REVIEW_TEAMS
   | par-each {|team|
+    let search = (
+      $"-author:@me($drafts_clause)($dependabot_clause)($reviewer_clause)"
+      | str replace --all "{team}" $team
+    )
     (
       gh pr list
       --repo $REPO
       --state open
       --limit $limit
-      --search $"-author:@me($drafts_clause)($dependabot_clause) team-review-requested:SheerHealth/($team)"
+      --search $search
       --json $JSON_FIELDS
     )
     | from json
@@ -58,11 +64,11 @@ def has_approved [number: int login: string] {
   | any {|review| $review.author?.login? == $login and $review.state == "APPROVED" }
 }
 
-def main [--limit: int = 200 --drafts --dependabot] {
+def main [--limit: int = 200 --drafts --dependabot --all] {
   require_herdr
   cd $REPO_DIR
 
-  let candidates = (prs $limit $drafts $dependabot)
+  let candidates = (prs $limit $drafts $dependabot $all)
 
   if ($candidates | is-empty) {
     print -e "no pull requests awaiting review"

@@ -53,6 +53,15 @@
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 
+  # Old user generations pin every store path they reference; 7,000+ dead
+  # paths had piled up before this. Only the user's profiles are covered
+  # (system generations on macOS need `sudo nix-collect-garbage`).
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 14d";
+  };
+
   # text expander
   # services.espanso = {
   #   enable = true;

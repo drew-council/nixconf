@@ -84,9 +84,11 @@ def stack-review [] {
   }
 
   let chosen = (
+    # listed top first to match `gh stack view`, with the bottom of the stack last
     $layers
+    | reverse
     | select branch commits pr flags
-    | input list --multi $"layers to review \(stack on ($stack.trunk), bottom first\)"
+    | input list --multi $"layers to review \(stack on ($stack.trunk), top first\)"
   )
   if ($chosen | is-empty) {
     return

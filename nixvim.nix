@@ -97,9 +97,51 @@ in
     }
   ];
 
+  # language servers, configured via neovim's builtin vim.lsp.config
+  # neovim already maps K, grn, gra, grr, gri, grt, gO, [d, ]d on attach
+  lsp = {
+    servers = {
+      # keep-sorted start
+      bashls.enable = true;
+      cssls.enable = true;
+      dockerls.enable = true;
+      golangci_lint_ls.enable = true;
+      gopls.enable = true;
+      html.enable = true;
+      jsonls.enable = true;
+      lua_ls.enable = true;
+      marksman.enable = true;
+      nixd.enable = true;
+      nushell.enable = true;
+      ruff.enable = true;
+      taplo.enable = true;
+      ts_ls.enable = true; # also handles tsx/jsx
+      ty.enable = true;
+      typos_lsp.enable = true; # spell checking for code in any language
+      yamlls.enable = true;
+      # keep-sorted end
+    };
+
+    keymaps = [
+      {
+        key = "gd";
+        lspBufAction = "definition";
+      }
+      {
+        key = "<leader>lf";
+        lspBufAction = "format";
+      }
+    ];
+  };
+
+  # golangci_lint_ls shells out to golangci-lint
+  extraPackages = [ pkgs.golangci-lint ];
+
   plugins = {
     # keep-sorted start
+    blink-cmp.enable = true; # completion menu fed by LSP
     direnv.enable = true;
+    lspconfig.enable = true; # default server configs (cmd, filetypes, root markers)
     lualine.enable = true;
     octo.enable = true;
     oil.enable = true;

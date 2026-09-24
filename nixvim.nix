@@ -52,6 +52,11 @@ in
     mouse = "a"; # enable mouse mode
   };
 
+  files."ftplugin/markdown.lua".localOpts = {
+    shiftwidth = 2; # 2-space indent for markdown
+    tabstop = 2;
+  };
+
   globals.mapleader = " "; # sets the leader key to space
   globals.maplocalleader = "\\"; # sets the local leader key to \
 

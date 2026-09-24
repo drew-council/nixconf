@@ -24,6 +24,9 @@
     ./tty/tty.nix
     ./wm
     ./xdg-mime.nix
+  ]
+  ++ lib.optionals platform.isDarwin [
+    ./wm/omniwm
   ];
 
   home =

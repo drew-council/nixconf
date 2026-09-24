@@ -30,6 +30,11 @@ in
 
   programs.zsh.enable = true;
 
+  # OmniWM switches workspaces on a three-finger horizontal swipe (see
+  # home/wm/omniwm); free the gesture from macOS's full-screen app swipe.
+  # Four fingers still swipe between Spaces.
+  system.defaults.trackpad.TrackpadThreeFingerHorizSwipeGesture = 0;
+
   # nix-darwin builds PATH from environment.systemPath alone and never runs
   # /usr/libexec/path_helper, so nothing in /etc/paths.d ever lands on PATH --
   # Homebrew's bin dir in particular. Re-add the entries that exist here.

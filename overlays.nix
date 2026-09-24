@@ -21,6 +21,16 @@ in
     }
   );
 
+  # nixpkgs lags upstream, and home/wm/omniwm/defaults.toml must match the
+  # settings schema of the running version. Recapture it when bumping.
+  omniwm = super.omniwm.overrideAttrs (oldAttrs: {
+    version = "0.7.2";
+    src = super.fetchurl {
+      url = "https://github.com/OmniNull/OmniWM/releases/download/v0.7.2/OmniWM-v0.7.2.zip";
+      hash = "sha256-wVPdL16U4JC4WG2E1AR5qv2AA44JOSNfMMS4Zyk3+8E=";
+    };
+  });
+
   protobuf-language-server = super.callPackage ./pkgs/protobuf-language-server.nix { };
   herdr-keybinds = super.callPackage ./home/programs/herdr/keybinds-plugin/package.nix { };
   herdr-web = super.callPackage ./pkgs/herdr-web { };

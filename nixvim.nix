@@ -144,7 +144,14 @@ in
 
   plugins = {
     # keep-sorted start
-    blink-cmp.enable = true; # completion menu fed by LSP
+    blink-cmp = {
+      enable = true; # completion menu fed by LSP
+      settings.sources.per_filetype.markdown = [
+        "lsp"
+        "path"
+        "snippets"
+      ]; # no word-from-buffer completions in markdown
+    };
     direnv.enable = true;
     lspconfig.enable = true; # default server configs (cmd, filetypes, root markers)
     lualine.enable = true;

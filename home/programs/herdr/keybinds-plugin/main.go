@@ -68,6 +68,16 @@ func newRootCommand() *cobra.Command {
 			},
 		},
 		&cobra.Command{
+			Use:   "open-ghst",
+			Short: "Open ghst in a narrow pane to the right",
+			Args:  cobra.NoArgs,
+			RunE: func(_ *cobra.Command, _ []string) error {
+				return runWithClient(func(c *client) error {
+					return c.openGhst()
+				})
+			},
+		},
+		&cobra.Command{
 			Use:   "toggle-popup <name>",
 			Short: "Toggle a configured popup overlay pane",
 			Args:  cobra.ExactArgs(1),

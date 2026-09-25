@@ -112,6 +112,12 @@ let
       title = "Open or create sheer worktree";
       command = keybindsCommand "sheer-workspace-popup" [ ];
     }
+    {
+      id = "open-ghst";
+      key = "alt+semicolon";
+      title = "Open ghst in a right pane";
+      command = keybindsCommand "open-ghst" [ ];
+    }
   ];
   keybindPluginActions = map (action: {
     inherit (action) id title command;

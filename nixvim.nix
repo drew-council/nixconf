@@ -143,7 +143,6 @@ in
   extraPackages = [ pkgs.golangci-lint ];
 
   plugins = {
-    # keep-sorted start
     blink-cmp = {
       enable = true; # completion menu fed by LSP
       settings.sources.per_filetype.markdown = [
@@ -160,7 +159,6 @@ in
     scrollview.enable = true;
     telescope.enable = true;
     web-devicons.enable = true;
-    # keep-sorted end
 
     # treesitter configuration
     treesitter = {

@@ -58,6 +58,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    gh-stack-tui = {
+      url = "github:drew-council/gh-stack-tui";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.topiary-nushell.follows = "topiary-nushell";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";

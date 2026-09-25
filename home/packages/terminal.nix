@@ -52,6 +52,7 @@ let
     rainfrog
     atac
     tdx
+    inputs.gh-stack-tui.packages.${pkgs.stdenv.hostPlatform.system}.ghst
     linear-cli
     ntn
     secretspec

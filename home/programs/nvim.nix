@@ -4,7 +4,7 @@
 }:
 
 let
-  baseConfig = import ../../nixvim.nix { inherit pkgs; };
+  baseConfig = import ../../nixvim { inherit pkgs; };
 in
 {
   # configure neovim using nixvim module

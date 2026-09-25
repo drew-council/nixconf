@@ -288,7 +288,7 @@
 
       packages = eachSystem (pkgs: {
         nvim = inputs.nixvim.legacyPackages.${pkgs.stdenv.hostPlatform.system}.makeNixvim (
-          import ./nixvim.nix { inherit pkgs; }
+          import ./nixvim { inherit pkgs; }
         );
         topiary-nushell = inputs.topiary-nushell.packages.${pkgs.stdenv.hostPlatform.system}.default;
         linear-cli = pkgs.linear-cli;

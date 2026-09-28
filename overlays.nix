@@ -97,6 +97,14 @@ in
       meta.platforms = [ "x86_64-linux" ];
     };
 
+  # these claude_integration tests fail in the build sandbox
+  secretspec = super.secretspec.overrideAttrs (oldAttrs: {
+    checkFlags = (oldAttrs.checkFlags or [ ]) ++ [
+      "--skip=configure_refuses_to_replace_an_unmanaged_helper"
+      "--skip=unconfigure_refuses_to_remove_an_edited_managed_helper"
+    ];
+  });
+
   # this package takes an *extremely* long time to check through all the files
   catppuccin-papirus-folders = super.catppuccin-papirus-folders.overrideAttrs (
     finalAttrs: previousAttrs: {

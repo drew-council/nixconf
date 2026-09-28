@@ -50,7 +50,7 @@ let
     # Deliberately no loadModels: remote-only, no model downloads or local inference.
     whisper = {
       mode = "remote";
-      # Both nixpkgs 0.6.6 and the cask 0.7.5 append /v1/audio/transcriptions to
+      # Both nixpkgs 0.6.6 and the cask 1.1.0 append /v1/audio/transcriptions to
       # the endpoint unconditionally (0.7.5's TUI help text misleadingly shows
       # "https://api.openai.com/v1"; its own unit tests append the path).
       remote_endpoint = "https://api.openai.com";
@@ -119,9 +119,10 @@ in
   };
 
   # Linux gets its config from the HM systemd service module
-  # (services.voxtype.settings). On darwin the cask reads the config from the
-  # macOS Application Support path, not ~/.config/voxtype/.
-  home.file."Library/Application Support/voxtype/config.toml" = lib.mkIf platform.isDarwin {
+  # (services.voxtype.settings). Since 1.1.0 the cask reads ~/.config/voxtype/
+  # on macOS too; Application Support is only a fallback when that directory
+  # is missing, and opnix always creates it for the API key.
+  xdg.configFile."voxtype/config.toml" = lib.mkIf platform.isDarwin {
     source = (pkgs.formats.toml { }).generate "voxtype-config.toml" darwinSettings;
   };
 

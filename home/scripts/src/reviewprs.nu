@@ -110,18 +110,12 @@ def main [--limit: int = 200 --drafts --dependabot --all] {
   $selected | reverse | open_prs
 }
 
-def normalize_pr_ref [raw: string] {
-  let ref = ($raw | str replace --regex '#.*$' '' | str trim)
-
-  if ($ref | is-empty) {
-    return null
-  }
-
-  if ($ref =~ `^(www\.)?github\.com/`) {
-    return $"https://($ref)"
-  }
-
-  $ref
+# Best-effort extraction of GitHub PR URLs from arbitrary text.
+def extract_pr_urls []: string -> list<string> {
+  $in
+  | parse --regex `(?:https?://)?(?:www\.)?github\.com/(?<owner>[\w.-]+)/(?<repo>[\w.-]+)/pull/(?<number>\d+)`
+  | each {|m| $"https://github.com/($m.owner)/($m.repo)/pull/($m.number)" }
+  | uniq
 }
 
 def load_pr [ref: string] {
@@ -142,20 +136,14 @@ def load_pr [ref: string] {
   }
 }
 
-# Paste a list of PR URLs or numbers into an editor and open them all.
+# Paste text containing GitHub PR URLs into an editor and open them all.
 def "main urls" [] {
   require_herdr
   cd $REPO_DIR
 
   let tempfile = (mktemp --suffix .txt)
   nvim $tempfile
-  let refs = (
-    open $tempfile
-    | lines
-    | each {|line| normalize_pr_ref $line }
-    | where {|ref| $ref != null }
-    | uniq
-  )
+  let refs = (open --raw $tempfile | extract_pr_urls)
   rm $tempfile
 
   if ($refs | is-empty) {

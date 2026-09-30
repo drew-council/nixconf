@@ -64,8 +64,6 @@ let
     "moveWindowToWorkspaceUp" = chord [ "Shift" ] "H";
     "moveWindowToWorkspaceDown" = chord [ "Shift" ] "L";
 
-    # Hyprland: SUPER+F. Command+F is find in every app.
-    "toggleFocusedWindowFloating" = chord [ "Shift" ] "F";
     "toggleFullscreen" = chord [ "Shift" ] "M";
     "closeFocusedWindow" = chord [ "Shift" ] "W";
   }

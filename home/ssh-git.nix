@@ -19,6 +19,27 @@ let
   };
   publicKeyFiles = builtins.mapAttrs genKeyFile publicKeys;
 
+  # global pre-commit hook: prefer a repo's scripts/pre-commit.sh (work
+  # repos), then its .githooks/pre-commit, otherwise do nothing
+  preCommitHook = pkgs.writeShellApplication {
+    name = "pre-commit";
+    text = ''
+      # resolve against the current worktree, not the main checkout
+      root=$(git rev-parse --show-toplevel)
+
+      work_hook="$root/scripts/pre-commit.sh"
+      personal_hook="$root/.githooks/pre-commit"
+
+      if [ -f "$work_hook" ]; then
+        exec sh "$work_hook" "$@"
+      fi
+
+      if [ -x "$personal_hook" ]; then
+        exec "$personal_hook" "$@"
+      fi
+    '';
+  };
+
   onePassPath = vcs.onePassword.agentSocket;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   weavePackage = inputs.weave.packages.${pkgs.stdenv.hostPlatform.system}.default;
@@ -137,7 +158,8 @@ in
         # should be declared deterministically, but can't get same pkg as in nixos config
         signer = vcs.onePassword.sshSigner;
       };
-      settings = {
+      # recursive so personalConfig.core doesn't replace core below
+      settings = pkgs.lib.recursiveUpdate {
         # preferences
         init.defaultBranch = "main";
         push.autoSetupRemote = true;
@@ -145,7 +167,10 @@ in
           name = "Entity-level semantic merge";
           driver = "weave-driver %O %A %B %L %P";
         };
-        core.hooksPath = ".githooks";
+        hook.repo-pre-commit = {
+          event = "pre-commit";
+          command = pkgs.lib.getExe preCommitHook;
+        };
         core.editor = vars.defaults.termEditor;
 
         # speed up large Git LFS uploads/downloads
@@ -164,7 +189,6 @@ in
 
         # 1password ssh commit signing (disabled on macOS)
         commit.gpgsign = !isDarwin;
-      }
-      // personalConfig; # set default to personal
+      } personalConfig; # set default to personal
     };
 }

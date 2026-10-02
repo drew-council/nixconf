@@ -29,7 +29,6 @@ in
     ./flatpak.nix
     ./fonts.nix
     ./kwallet.nix
-    ./pwa.nix
     ./spacemouse.nix
     ./virtmanager.nix
   ];

@@ -27,6 +27,7 @@
     ./chromium.nix
     ./feh.nix
     ./firefox.nix
+    ./firefoxpwa.nix
     ./op.nix
     ./spotify-player.nix
     ./vesktop.nix

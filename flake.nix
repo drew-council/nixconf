@@ -65,6 +65,13 @@
       inputs.treefmt-nix.follows = "treefmt-nix";
     };
 
+    gchat-desktop = {
+      url = "github:drew-council/gchat-desktop";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.topiary-nushell.follows = "topiary-nushell";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -101,6 +108,8 @@
         ];
         overlays = [
           (import ./overlays.nix { inherit inputs; })
+          # builds against this flake's nixpkgs, including its Electron
+          inputs.gchat-desktop.overlays.default
         ];
       };
 

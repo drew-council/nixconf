@@ -80,6 +80,7 @@ in
         mpv # preferred media playback
         kdePackages.kdenlive
 
+        gchat-desktop # electron wrapper for google chat
         spotify
         ytmdesktop # desktop app for youtube music
         # calibre

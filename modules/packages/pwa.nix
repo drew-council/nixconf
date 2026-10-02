@@ -42,10 +42,6 @@ let
       name = "Google Calendar";
       url = "https://calendar.google.com";
     }
-    {
-      name = "Google Chat";
-      url = "https://chat.google.com";
-    }
   ];
 in
 {

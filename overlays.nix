@@ -32,6 +32,14 @@ in
   });
 
   protobuf-language-server = super.callPackage ./pkgs/protobuf-language-server.nix { };
+  # binutils 2.46 ld.bfd rejects the Zig-built libghostty-vt objects
+  # (".eh_frame_hdr refers to overlapping FDEs"); link with lld instead.
+  herdr = super.herdr.overrideAttrs (oldAttrs: {
+    nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [ super.lld ];
+    env = (oldAttrs.env or { }) // {
+      RUSTFLAGS = "-C link-arg=-fuse-ld=lld";
+    };
+  });
   herdr-keybinds = super.callPackage ./home/programs/herdr/keybinds-plugin/package.nix { };
   herdr-web = super.callPackage ./pkgs/herdr-web { };
   lg-herdr-watch =

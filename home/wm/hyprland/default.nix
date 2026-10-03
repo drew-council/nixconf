@@ -19,7 +19,6 @@ let
     ];
     text = builtins.readFile ./monitor-switcher/poke-layer-layout.sh;
   };
-  hyprlandPackage = pkgs.hyprland;
   hyprlandPortalPackage = pkgs.xdg-desktop-portal-hyprland;
   toLua = lib.generators.toLua { };
 
@@ -122,7 +121,8 @@ in
 
   wayland.windowManager.hyprland = {
     enable = true;
-    package = hyprlandPackage;
+    # NixOS installs the upstream compositor; Home Manager only manages its config.
+    package = null;
     portalPackage = hyprlandPortalPackage;
     systemd.enable = false;
     configType = "lua";

@@ -58,6 +58,7 @@ in
         inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.helium-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
         google-chrome
+        agent-browser # browser automation CLI for AI agents
         # firefox in home manager
 
         qalculate-qt # calculator

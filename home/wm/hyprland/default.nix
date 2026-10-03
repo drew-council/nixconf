@@ -93,6 +93,17 @@ in
       pkgs.kdePackages.xdg-desktop-portal-kde
       pkgs.xdg-desktop-portal-gtk
     ];
+    config.hyprland = {
+      default = [
+        "hyprland"
+        "gtk"
+        "kde"
+      ];
+      "org.freedesktop.impl.portal.FileChooser" = [ "kde" ];
+      "org.freedesktop.impl.portal.Settings" = [ "gtk" ];
+      "org.freedesktop.impl.portal.ScreenCast" = [ "hyprland" ];
+      "org.freedesktop.impl.portal.Screenshot" = [ "hyprland" ];
+    };
   };
 
   systemd.user.services.sunshine-tablet = {
@@ -108,16 +119,6 @@ in
       RestartSec = 5;
     };
   };
-
-  # Write portal config file
-  home.file.".config/xdg-desktop-portal/hyprland-portals.conf".text = ''
-    [preferred]
-    default = hyprland;gtk;kde
-    org.freedesktop.impl.portal.FileChooser = kde
-    org.freedesktop.impl.portal.Settings = gtk
-    org.freedesktop.impl.portal.ScreenCast = hyprland
-    org.freedesktop.impl.portal.Screenshot = hyprland
-  '';
 
   wayland.windowManager.hyprland = {
     enable = true;

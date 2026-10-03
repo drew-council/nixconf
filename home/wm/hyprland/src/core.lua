@@ -15,6 +15,15 @@ hl.window_rule({
 	fullscreen = true,
 })
 
+-- agent-browser sets this class through its managed Chrome launch arguments.
+hl.window_rule({
+	name = "agent-browser-workspace",
+	match = {
+		initial_class = "^agent-browser$",
+	},
+	workspace = "6 silent",
+})
+
 hl.config({
 	xwayland = {
 		force_zero_scaling = true,

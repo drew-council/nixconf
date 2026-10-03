@@ -82,6 +82,11 @@ in
 {
   imports = [ ./monitor-switcher ];
 
+  # Distinguish automation windows from ordinary Chrome/Chromium windows.
+  home.file.".agent-browser/config.json".text = builtins.toJSON {
+    args = "--class=agent-browser";
+  };
+
   catppuccin.hyprland = {
     enable = false;
     accent = "mauve";

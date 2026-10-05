@@ -28,6 +28,7 @@
   ]
   ++ lib.optionals platform.isDarwin [
     ./karabiner
+    ./raycast.nix
     ./wm/omniwm
   ];
 

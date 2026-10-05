@@ -15,7 +15,7 @@
 #   standalone Home/End rules shadowed by "PC-Style Home/End", and the
 #   PrintScreen variants shadowed by "PC-Style Screenshot".
 # - Dropped "PC-Style Switch Input" (Command+Space to Control+Space), so
-#   Command+Space still opens Spotlight.
+#   Command+Space still reaches Raycast (home/raycast.nix).
 # - Helium added to the browsers.
 #
 # The app itself is a Homebrew cask (hosts/macos/configuration.nix).

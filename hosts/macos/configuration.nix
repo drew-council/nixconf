@@ -53,9 +53,11 @@ in
   # Determinate owns the Nix daemon and its settings.
   nix.enable = false;
 
-  # GUI apps from nixpkgs. nix-darwin links every .app in these packages into
+  # GUI apps from nixpkgs. nix-darwin copies every .app in these packages into
   # /Applications/Nix Apps during activation, so Spotlight/Launchpad find them.
+  # The copies are read-only, so apps update with flake.lock, not themselves.
   environment.systemPackages = [
+    pkgs.raycast # launcher on Command+Space; settings in home/raycast.nix
     pkgs.ytmdesktop # desktop app for youtube music (linux uses the same package via modules/packages/graphical.nix)
   ];
 
@@ -79,10 +81,11 @@ in
     ];
   };
 
-  # Login items for the casks above. Neither nix-darwin nor Home Manager
-  # (at the locked revisions) ships modules for these apps, so run them as
-  # user launchd agents instead (see loginItem above).
+  # Login items for GUI apps. Neither nix-darwin nor Home Manager (at the
+  # locked revisions) ships modules for these apps, so run them as user
+  # launchd agents instead (see loginItem above).
   launchd.user.agents = {
     maccy = loginItem "Maccy";
+    raycast = loginItem "Nix Apps/Raycast";
   };
 }

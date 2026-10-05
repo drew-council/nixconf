@@ -28,6 +28,12 @@ in
       keybind = [
         "ctrl+enter=unbind"
         "ctrl+shift+enter=unbind"
+      ]
+      # Linux-style clipboard keys; Karabiner leaves terminals alone (see
+      # home/karabiner), so Ctrl+C still reaches the shell.
+      ++ lib.optionals platform.isDarwin [
+        "ctrl+shift+c=copy_to_clipboard"
+        "ctrl+shift+v=paste_from_clipboard"
       ];
 
       copy-on-select = "clipboard";

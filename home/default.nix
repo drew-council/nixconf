@@ -26,6 +26,7 @@
     ./xdg-mime.nix
   ]
   ++ lib.optionals platform.isDarwin [
+    ./karabiner
     ./wm/omniwm
   ];
 

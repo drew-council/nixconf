@@ -70,6 +70,9 @@ in
     ];
     casks = [
       "peteonrails/voxtype/voxtype"
+      # Key remapper for Linux-style Ctrl shortcuts; config in home/karabiner.
+      # Starts itself at login via its own launch daemons.
+      "karabiner-elements"
       # Menu bar utilities that must start at login; see launchd.user.agents
       # below for the login-item wiring.
       "maccy"

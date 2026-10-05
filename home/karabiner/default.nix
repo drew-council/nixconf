@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 # Linux-style Ctrl shortcuts on macOS: a port of Karabiner-Elements' "PC-Style
 # Shortcuts" rule set (Ctrl+C/V/X/Z/A/S/F/T/W/..., Ctrl+arrows, Home/End,
@@ -14,6 +14,8 @@
 # - Dropped "PC-Style Lock Screen" (Command+L is OmniWM's focus.right), the
 #   standalone Home/End rules shadowed by "PC-Style Home/End", and the
 #   PrintScreen variants shadowed by "PC-Style Screenshot".
+# - Dropped "PC-Style Switch Input" (Command+Space to Control+Space), so
+#   Command+Space still opens Spotlight.
 # - Helium added to the browsers.
 #
 # The app itself is a Homebrew cask (hosts/macos/configuration.nix).
@@ -306,15 +308,6 @@ let
         conditions = [ notRemote ];
       })
     ])
-    (rule "PC-Style Switch Input (Command+Space)" [
-      (remap {
-        key = "spacebar";
-        mandatory = [ "command" ];
-        optional = [ ];
-        to = press "spacebar" [ "left_control" ];
-        conditions = [ notRemote ];
-      })
-    ])
     (rule "PC-Style Screenshot (PrintScreen for whole, Shift+PrintScreen to select)" [
       (remap {
         key = "print_screen";
@@ -419,6 +412,21 @@ let
     (rule "PC-Style Control+K" [ (ctrlToCmd notCtrlApp "k") ])
   ];
 
+  # Wheel scrolling opposite the trackpad, replacing Scroll Reverser (whose
+  # config was: vertical only, mice only, trackpad untouched). Karabiner
+  # ignores pointing devices by default, so opt this one in; only its own
+  # events are flipped, leaving the built-in trackpad on natural scrolling.
+  # IDs from `hidutil list` (Bluetooth LE: 0x46d / 0xb034).
+  mxMaster3S = {
+    identifiers = {
+      is_pointing_device = true;
+      vendor_id = 1133;
+      product_id = 45108;
+    };
+    ignore = false;
+    mouse_flip_vertical_wheel = true;
+  };
+
   karabinerJson = (pkgs.formats.json { }).generate "karabiner.json" {
     global.show_in_menu_bar = false;
     profiles = [
@@ -426,16 +434,27 @@ let
         name = "Default profile";
         selected = true;
         complex_modifications.rules = rules;
+        devices = [ mxMaster3S ];
         virtual_hid_keyboard.keyboard_type_v2 = "ansi";
       }
     ];
   };
 in
 {
-  # Karabiner misses changes to a symlinked karabiner.json, so link the whole
-  # directory instead. It is read-only, so make changes here, not in the GUI.
-  xdg.configFile."karabiner".source = pkgs.runCommand "karabiner-config" { } ''
-    mkdir $out
-    cp ${karabinerJson} $out/karabiner.json
+  # Copy karabiner.json into a real directory rather than linking it from the
+  # store. Karabiner keeps watching the store path a symlink resolved to at
+  # startup, so it never sees a new generation, and it repeatedly fails to
+  # chmod a read-only config directory. Edits made in the GUI are overwritten
+  # on the next switch whenever this config changes, so make changes here.
+  # Runs after linkGeneration, which removes the old directory symlink.
+  home.activation.karabinerConfig = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    dir="$HOME/.config/karabiner"
+    if [ -L "$dir" ]; then
+      run rm "$dir"
+    fi
+    run mkdir -p "$dir"
+    if ! cmp -s ${karabinerJson} "$dir/karabiner.json"; then
+      run install -m 600 ${karabinerJson} "$dir/karabiner.json"
+    fi
   '';
 }

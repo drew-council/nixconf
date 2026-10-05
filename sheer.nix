@@ -18,63 +18,79 @@ let
     '';
   });
 
-  # PATH handed to Bazel actions on NixOS. The repo sets
-  # --incompatible_strict_action_env, so actions otherwise get
-  # /bin:/usr/bin:/usr/local/bin, which on NixOS holds only sh and env. Bazel
-  # also forwards --action_env to repository rules, so the cc toolchain
-  # autodetection needs to find gcc and binutils here too. Keep the list small:
-  # the PATH string is part of every action's cache key.
   # Bazel writes the workspace path into DO_NOT_BUILD_HERE in every output
   # base, and each worktree gets its own output base (see .bazelrc below), so
   # deleting a worktree strands an output base of several GiB. Nothing else
-  # ever reclaims them: 20 stranded bases once filled ~150 GiB. This walks the
-  # output_user_root and removes bases whose workspace is gone.
+  # ever reclaims them: 20 stranded bases once filled ~150 GiB. Bazel never
+  # shrinks a live worktree's base either: one that has run the Go tests holds
+  # ~25 GiB of go_test binaries (one per _test.go file) indefinitely. This
+  # walks the output_user_root and removes bases whose workspace is gone or
+  # that no command has used in --max-idle-days. Bazel 9 clones disk-cache
+  # hits into the output base, so rebuilding a pruned worktree costs APFS
+  # clones rather than a full build while the disk cache still holds them.
   bazelprune = pkgs.writeScriptBin "bazelprune" ''
     #!${lib.getExe pkgs.nushell}
 
-    # Delete Bazel output bases whose workspace directory no longer exists.
-    def main [--dry-run] {
+    # Delete Bazel output bases whose workspace directory no longer exists, or
+    # that have not been used in --max-idle-days.
+    def main [--dry-run, --max-idle-days: int = 3] {
       let root = "${outputBaseRoot}/_bazel_${vars.user}"
       if not ($root | path exists) {
         return
       }
+      let cutoff = ((date now) - ($max_idle_days * 1day))
 
-      let orphans = (
+      let stale = (
         ls $root
         | where type == dir
         | each {|entry|
             let marker = ($entry.name | path join "DO_NOT_BUILD_HERE")
             if not ($marker | path exists) { return null }
             let workspace = (open --raw $marker | str trim)
-            if ($workspace | path exists) { return null }
-            # Never pull an output base out from under a live server.
+            # Never pull an output base out from under a live server. A server
+            # exits after --max_idle_secs (3h), so a live one was used recently.
             let pid_file = ($entry.name | path join "server" "server.pid.txt")
             let pid = if ($pid_file | path exists) { open --raw $pid_file | str trim } else { "" }
             if ($pid | is-not-empty) and (do { ^kill -0 $pid } | complete | get exit_code) == 0 {
               return null
             }
-            { base: $entry.name, workspace: $workspace }
+            if not ($workspace | path exists) {
+              return { base: $entry.name, reason: $"workspace ($workspace) is gone" }
+            }
+            # Every command writes a profile and takes the lock at the top
+            # level, so the newest top-level mtime is the last use.
+            let last_used = (ls --all $entry.name | sort-by modified | last | get modified)
+            if $last_used < $cutoff {
+              return { base: $entry.name, reason: $"($workspace) unused since ($last_used | format date '%Y-%m-%d')" }
+            }
+            null
           }
         | compact
       )
 
-      if ($orphans | is-empty) {
-        print "No orphaned Bazel output bases."
+      if ($stale | is-empty) {
+        print "No stale Bazel output bases."
         return
       }
 
-      for orphan in $orphans {
-        print $"($orphan.base): workspace ($orphan.workspace) is gone"
+      for base in $stale {
+        print $"($base.base): ($base.reason)"
         if not $dry_run {
           # Bazel marks parts of the output tree read-only.
-          ^chmod -R u+w $orphan.base
-          rm --recursive --force --permanent $orphan.base
+          ^chmod -R u+w $base.base
+          rm --recursive --force --permanent $base.base
         }
       }
     }
   '';
   bazelpruneLogDir = "${vars.home}/Library/Logs/bazelprune";
 
+  # PATH handed to Bazel actions on NixOS. The repo sets
+  # --incompatible_strict_action_env, so actions otherwise get
+  # /bin:/usr/bin:/usr/local/bin, which on NixOS holds only sh and env. Bazel
+  # also forwards --action_env to repository rules, so the cc toolchain
+  # autodetection needs to find gcc and binutils here too. Keep the list small:
+  # the PATH string is part of every action's cache key.
   bazelActionPath = lib.makeBinPath (
     with pkgs;
     [
@@ -122,7 +138,7 @@ in
       opentofu
       pnpm_10 # repo pins packageManager pnpm@10.x
       pulumi
-      bazelprune # also runs weekly, see launchd.agents / systemd.user.timers
+      bazelprune # also runs daily, see launchd.agents / systemd.user.timers
     ]
     ++ lib.optionals platform.isLinux [
       # C compiler for cgo outside Bazel (e.g. golangci-lint via `go tool`). On
@@ -135,15 +151,15 @@ in
       pkgs.python3
     ];
 
-  # Weekly run of bazelprune. Worktrees come and go daily, so without this
-  # the stranded output bases quietly eat the disk.
+  # Daily run of bazelprune. Worktrees come and go daily, so without this the
+  # stranded and idle output bases quietly eat the disk. launchd runs a missed
+  # interval on wake.
   launchd.agents.bazelprune = lib.mkIf platform.isDarwin {
     enable = true;
     config = {
       ProgramArguments = [ "${bazelprune}/bin/bazelprune" ];
       StartCalendarInterval = [
         {
-          Weekday = 1;
           Hour = 10;
           Minute = 0;
         }
@@ -160,16 +176,16 @@ in
   );
 
   systemd.user.services.bazelprune = lib.mkIf platform.isLinux {
-    Unit.Description = "Remove Bazel output bases whose workspace is gone";
+    Unit.Description = "Remove Bazel output bases that are orphaned or idle";
     Service = {
       Type = "oneshot";
       ExecStart = "${bazelprune}/bin/bazelprune";
     };
   };
   systemd.user.timers.bazelprune = lib.mkIf platform.isLinux {
-    Unit.Description = "Weekly bazelprune";
+    Unit.Description = "Daily bazelprune";
     Timer = {
-      OnCalendar = "weekly";
+      OnCalendar = "daily";
       Persistent = true;
     };
     Install.WantedBy = [ "timers.target" ];
@@ -190,9 +206,21 @@ in
 
     build --disk_cache=${cache}/disk-cache
     test  --disk_cache=${cache}/disk-cache
-    # Garbage-collect the disk cache in the background once the server idles,
-    # so it stays under this size instead of growing without bound.
+    # Garbage-collect the disk cache in the background once a server has been
+    # idle for 5m: least recently used entries go until it is under the size,
+    # and entries unused for the max age go regardless. Keep the max age above
+    # bazelprune's --max-idle-days so a pruned worktree rebuilds from clones.
     common --experimental_disk_cache_gc_max_size=50G
+    common --experimental_disk_cache_gc_max_age=7d
+    # The repo contents cache keeps every version of every external repo it
+    # has fetched, so a dependency bump or Bazel upgrade leaves the old ones
+    # for the 14d default (the Bazel 9 upgrade left ~55 GB). A dropped repo is
+    # re-extracted from the repository cache, mostly without the network.
+    common --repo_contents_cache_gc_max_age=7d
+    # gazelle's go_repository_cache is not a reproducible repo, so it lives in
+    # every output base as its own ~2 GB Go module cache. Point it at the host
+    # GOMODCACHE and GOCACHE instead; MODULE.bazel.lock does not record it.
+    common --repo_env=GO_REPOSITORY_USE_HOST_CACHE=1
   ''
   # NixOS lacks the FHS layout the repo's toolchains assume. Together with
   # modules/fhs-shebangs.nix (which provides /bin/bash and /usr/bin/python3

@@ -10,6 +10,7 @@
     # keep-sorted start
     ../sheer.nix
     ./keybindings.nix
+    ./packages/graphical.nix
     ./packages/terminal.nix
     ./programs
     ./scripts
@@ -47,7 +48,7 @@
       # You should not change this value, even if you update Home Manager. If you do
       # want to update the value, then make sure to first check the Home Manager
       # release notes.
-      stateVersion = "24.11"; # Please read the comment before changing.
+      stateVersion = "26.05"; # Please read the comment before changing.
 
       sessionPath = [
         "${homeDirectory}/.cargo/bin" # programs from `cargo install`

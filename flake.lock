@@ -306,11 +306,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790960104,
-        "narHash": "sha256-E+ja21FV90gpncMMeInegtsLX8NvgnikrNMMxOd2rDM=",
+        "lastModified": 1791225170,
+        "narHash": "sha256-tUD3jMkX1aMyl9KALWJs0FRskFav05ZtPflvqfZepso=",
         "owner": "drew-council",
         "repo": "gchat-desktop",
-        "rev": "84f53c4423a46f654685bce3a7f44b6d11c090c2",
+        "rev": "b35eb11ab36f76d73390537ddf09bc0f47d5ca24",
         "type": "github"
       },
       "original": {

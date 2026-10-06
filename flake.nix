@@ -63,6 +63,13 @@
       inputs.treefmt-nix.follows = "treefmt-nix";
     };
 
+    agent-artifacts = {
+      url = "github:drew-council/agent-artifacts";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.topiary-nushell.follows = "topiary-nushell";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
     gchat-desktop = {
       url = "github:drew-council/gchat-desktop";
       inputs.nixpkgs.follows = "nixpkgs";

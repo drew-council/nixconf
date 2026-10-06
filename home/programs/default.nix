@@ -6,6 +6,7 @@
 {
   imports = [
     # keep-sorted start
+    ./agent-artifacts.nix
     ./archive
     ./bat.nix
     ./btop.nix

@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   platform,
@@ -89,5 +90,24 @@ in
   programs.gitui.enable = false;
 }
 // lib.optionalAttrs platform.isLinux {
+  # lazygit >= 0.60 deprecates `gui.authorColors` in favor of
+  # `gui.theme.authorColors` and aborts at startup when its automatic config
+  # migration cannot write the change back to the read-only /nix/store theme
+  # file that the catppuccin module points LG_CONFIG_FILE at.
+  # Pre-migrate the theme files so lazygit never sees the deprecated key.
+  # Upstream: https://github.com/jesseduffield/lazygit/issues/4595
+  catppuccin.sources.lazygit = inputs.catppuccin.packages.${pkgs.system}.lazygit.overrideAttrs (old: {
+    postInstall = (old.postInstall or "") + ''
+      find "$out" -name '*.yml' -print0 | while IFS= read -r -d "" f; do
+        awk '
+          /^  authorColors:/ { print "    authorColors:"; moved = 1; next }
+          moved && /^    / { sub(/^    /, "      "); print; next }
+          moved && /^[[:space:]]*$/ { next }
+          { moved = 0; print }
+        ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+      done
+    '';
+  });
+
   catppuccin.lazygit.enable = true;
 }

@@ -14,11 +14,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791319991,
-        "narHash": "sha256-YxiI9eVoakaZxhR9IWmKpcnz4PhtPgqN753XQPKtTI0=",
+        "lastModified": 1791320740,
+        "narHash": "sha256-Tp1U17iF9aXOphvnEZFJX30pn8zjaIEM0U0gZ/Sraj0=",
         "owner": "drew-council",
         "repo": "agent-artifacts",
-        "rev": "f9f713e4bc19b8adf96fd0bfa48a5e93f2f3461f",
+        "rev": "b9e4bdb0dbd2885526d924c60e267da8cf3844fa",
         "type": "github"
       },
       "original": {

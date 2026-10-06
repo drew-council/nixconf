@@ -241,5 +241,11 @@ in
     # canonical bzlmod name of rules_cc's cc_configure extension repo; it is
     # not visible under an apparent name from the main module.
     build --extra_toolchains=@@rules_cc++cc_configure_extension+local_config_cc_toolchains//:all
+    # protobuf's protoc version check runs `bash -c` with an empty environment,
+    # and Nix's bash has no usable default PATH, so its grep and cat are not
+    # found and every build that touches a proto fails with "protoc version
+    # does not match". This skips only that check; the prebuilt protoc is
+    # still the pinned one.
+    common --@com_google_protobuf//bazel/toolchains:allow_nonstandard_protoc
   '';
 }

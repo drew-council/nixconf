@@ -50,8 +50,11 @@ let
   bindings = {
     "focus.left" = chord [ ] "H";
     "focus.down" = chord [ ] "J";
-    "focus.up" = chord [ ] "K";
-    "focus.right" = chord [ ] "L";
+    # Karabiner turns Control+K and Control+L into Command+K and Command+L for
+    # apps, which OmniWM can't tell from the real keys, so Karabiner runs these
+    # itself when Command is actually held (../../karabiner).
+    "focus.up" = "Unassigned";
+    "focus.right" = "Unassigned";
 
     # Hyprland: SUPER+ALT.
     "resizeShrink.horizontal" = chord [ "Option" ] "H";

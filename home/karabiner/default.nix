@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 # Linux-style Ctrl shortcuts on macOS: a port of Karabiner-Elements' "PC-Style
 # Shortcuts" rule set (Ctrl+C/V/X/Z/A/S/F/T/W/..., Ctrl+arrows, Home/End,
@@ -111,6 +116,8 @@ let
 
   press = key_code: modifiers: { inherit key_code modifiers; };
   run = shell_command: { inherit shell_command; };
+
+  omniwmctl = "${config.programs.omniwm.package}/bin/omniwmctl";
 
   remap =
     {
@@ -336,6 +343,27 @@ let
         conditions = [ notRemote ];
       })
     ])
+    # OmniWM can't bind these itself: "PC-Style Control+K" and "PC-Style
+    # Browser open location (Ctrl+L)" send Command+K and Command+L to apps,
+    # which look the same to OmniWM as the real keys. Here the physical
+    # Command is still known (../wm/omniwm).
+    (rule "Command+K/L Focus Up/Right in OmniWM" (
+      lib.mapAttrsToList
+        (
+          key: direction:
+          remap {
+            inherit key;
+            mandatory = [ "command" ];
+            optional = [ ];
+            to = run "${omniwmctl} command focus ${direction}";
+            conditions = [ notRemote ];
+          }
+        )
+        {
+          k = "up";
+          l = "right";
+        }
+    ))
     (rule "Command+E Opens Finder" [
       (remap {
         key = "e";

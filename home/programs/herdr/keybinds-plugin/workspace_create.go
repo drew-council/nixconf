@@ -74,7 +74,30 @@ func (c *client) sheerWorkspacePicker(fzf string) error {
 	if branch == "" {
 		return nil
 	}
+	return c.openOrCreateSheerBranch(branch, worktrees)
+}
 
+// sheerWorkspaceBranch opens or creates the sheer worktree for branch without
+// prompting, so scripts and agents can drive the same workflow as alt+s.
+func (c *client) sheerWorkspaceBranch(branch string) error {
+	if sheerRepo == "" {
+		return errors.New("sheer repository path is not configured")
+	}
+	branch = normalizeSheerBranchName(branch)
+	if branch == "" {
+		return errors.New("branch name cannot be empty")
+	}
+
+	worktrees, err := c.sheerWorktrees()
+	if err != nil {
+		return err
+	}
+	return c.openOrCreateSheerBranch(branch, worktrees)
+}
+
+// openOrCreateSheerBranch focuses an existing worktree for branch, or creates
+// one when none of the listed worktrees has it checked out.
+func (c *client) openOrCreateSheerBranch(branch string, worktrees []existingWorktreeInfo) error {
 	for _, worktree := range worktrees {
 		if worktree.Branch == branch {
 			workspaceID, err := c.ensureSheerMainWorkspace()

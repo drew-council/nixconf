@@ -124,20 +124,7 @@ func newRootCommand() *cobra.Command {
 				})
 			},
 		},
-		&cobra.Command{
-			Use:   "sheer-workspace [fzf]",
-			Short: "Open or create a sheer worktree workspace",
-			Args:  cobra.MaximumNArgs(1),
-			RunE: func(_ *cobra.Command, args []string) error {
-				fzf := "fzf"
-				if len(args) == 1 {
-					fzf = args[0]
-				}
-				return runWithClient(func(c *client) error {
-					return c.sheerWorkspacePicker(fzf)
-				})
-			},
-		},
+		newSheerWorkspaceCommand(),
 		&cobra.Command{
 			Use:    "open-workspace-popup",
 			Short:  "Open the workspace picker in a popup pane",
@@ -163,6 +150,38 @@ func newRootCommand() *cobra.Command {
 	)
 
 	return rootCmd
+}
+
+// newSheerWorkspaceCommand builds the sheer worktree command. Without --branch
+// it prompts with fzf; with it, the branch is opened or created directly.
+func newSheerWorkspaceCommand() *cobra.Command {
+	var branch string
+	cmd := &cobra.Command{
+		Use:   "sheer-workspace [fzf]",
+		Short: "Open or create a sheer worktree workspace",
+		Example: "  herdrctl sheer-workspace\n" +
+			"  herdrctl sheer-workspace --branch drew/my-feature",
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("branch") {
+				if len(args) > 0 {
+					return errors.New("fzf argument cannot be combined with --branch")
+				}
+				return runWithClient(func(c *client) error {
+					return c.sheerWorkspaceBranch(branch)
+				})
+			}
+			fzf := "fzf"
+			if len(args) == 1 {
+				fzf = args[0]
+			}
+			return runWithClient(func(c *client) error {
+				return c.sheerWorkspacePicker(fzf)
+			})
+		},
+	}
+	cmd.Flags().StringVarP(&branch, "branch", "b", "", "full branch name to open or create, e.g. drew/my-feature")
+	return cmd
 }
 
 // runWithClient creates a Herdr client and runs one command action with it.

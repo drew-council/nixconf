@@ -1,0 +1,5 @@
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+enp57s0u1u4c2    UP             a0:ce:c8:b8:ef:40 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+wlp58s0          UP             9c:b6:d0:e1:d2:bd <BROADCAST,MULTICAST,UP,LOWER_UP> 
+tailscale0       UNKNOWN        <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> 
+docker0          DOWN           6a:4f:46:3d:a7:eb <NO-CARRIER,BROADCAST,MULTICAST,UP> 

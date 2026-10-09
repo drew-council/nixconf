@@ -8,6 +8,7 @@
 
 const warmed_system = "/nix/store/73m4hpc2wppbi1xmzssw0xxsw7hg6w6g-nixos-system-xps-26.11.20261008.e7439b6"
 const cached_nh = "/nix/store/686hw7j34n30mxyha31xdqx3nss8dzbq-nh-4.4.2"
+const cached_nix = "/nix/store/cv7vd1i121mj84jb694gjc3xvr0da4xw-nix-2.34.8"
 
 def run-root [args: list<string>] {
   ^sudo ...$args
@@ -41,7 +42,7 @@ def main [
   ]
   let eval_args = (
     [
-      "nix"
+      $"($cached_nix)/bin/nix"
       "eval"
       "--raw"
       "--no-update-lock-file"
@@ -52,16 +53,21 @@ def main [
     [
       "nix"
       "build"
+      $cached_nix
       $cached_nh
       "--no-link"
       "--max-jobs"
       "0"
     ] | append $cache_options
   )
-  # Use the current, plain nh rather than an old installed nh or the Cachix
-  # upload wrapper. Root can supply cache keys even on an outdated daemon.
+  # Bootstrap without evaluating any flake: the old Nix cannot read modern
+  # relative-path lock entries. Use the downloaded client for eval and nh's
+  # subprocesses; leave the running daemon and system configuration unchanged.
+  # Use plain nh rather than the Cachix upload wrapper (no token required).
   let boot_args = (
     [
+      "env"
+      $"PATH=($cached_nix)/bin:($env.PATH | str join ':')"
       $"($cached_nh)/bin/nh"
       "os"
       "boot"
@@ -77,8 +83,8 @@ def main [
   )
 
   if $dry_run {
-    print "Check that this checkout evaluates to the warmed XPS system, download cached nh, then rebuild and set the boot default:"
-    for args in [$eval_args $bootstrap_args $boot_args] {
+    print "Download cached Nix and nh without flake evaluation, check the warmed XPS system, then rebuild and set the boot default:"
+    for args in [$bootstrap_args $eval_args $boot_args] {
       print ($args | prepend "sudo" | to nuon)
     }
     return
@@ -91,6 +97,9 @@ def main [
     error make {msg: "This script requires NixOS."}
   }
 
+  print "Downloading current Nix and nh from the configured caches (no compilation)..."
+  run-root $bootstrap_args
+
   print "Checking the flake against the system warmed on igneous..."
   let evaluation = (^sudo ...$eval_args | complete)
   if $evaluation.exit_code != 0 {
@@ -101,8 +110,6 @@ def main [
     error make {msg: $"This checkout produces ($actual), not the cached system ($warmed_system). Use the warmed checkout or warm the new system first."}
   }
 
-  print "Downloading current nh from the configured caches (no compilation)..."
-  run-root $bootstrap_args
   print "Building XPS with caches enabled, then setting the next boot generation..."
   run-root $boot_args
   print "Done. The running system is unchanged. Reboot when ready; the previous generation remains available in the boot menu."

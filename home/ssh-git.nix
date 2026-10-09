@@ -16,6 +16,7 @@ let
   publicKeys = {
     personalGitHub = vcs.identities.personal.sshPublicKey;
     hetzner = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGogIJ4uaReEMnM8eRedZh0OVq/4AAs4H8xdiWjvf6YF";
+    xps = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINPILydKagpHBNoXFBEcUxqf4wFZDD6GRY09FGfLt/EH";
   };
   publicKeyFiles = builtins.mapAttrs genKeyFile publicKeys;
 
@@ -113,6 +114,13 @@ in
         IdentitiesOnly yes
         IdentityAgent "${onePassPath}"
 
+    Host xps
+        HostName 192.168.1.145
+        User drew
+        IdentityFile ${publicKeyFiles.xps}
+        IdentitiesOnly yes
+        IdentityAgent "${onePassPath}"
+
     Host *
         IdentityAgent "${onePassPath}"
   '';
@@ -125,6 +133,7 @@ in
         "ssh-keys" = map (item: { inherit item; }) [
           "tf64ipw7poybpzazfzz3geyefu" # personal github
           "av5h4r2kyfwueck7e7jq7gw5cu" # hetzner
+          "3g5n4a5cc53mljbipupfcmr2zu" # xps
         ];
       };
 

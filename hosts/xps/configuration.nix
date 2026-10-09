@@ -1,10 +1,27 @@
 {
+  vars,
   ...
 }:
 
 {
   imports = [
     ./hardware-configuration.nix
+  ];
+
+  services.openssh = {
+    enable = true;
+    openFirewall = true;
+    settings = {
+      AuthenticationMethods = "publickey";
+      KbdInteractiveAuthentication = false;
+      PasswordAuthentication = false;
+      PermitRootLogin = "no";
+      PubkeyAuthentication = true;
+    };
+  };
+
+  users.users."${vars.user}".openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINPILydKagpHBNoXFBEcUxqf4wFZDD6GRY09FGfLt/EH"
   ];
 
   # This value determines the NixOS release from which the default

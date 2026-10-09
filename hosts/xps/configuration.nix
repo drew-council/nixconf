@@ -7,6 +7,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./hermes.nix
   ];
 
   # Keep remote access available with the lid closed, on battery or AC power.

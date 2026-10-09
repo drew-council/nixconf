@@ -8,6 +8,14 @@
     ./hardware-configuration.nix
   ];
 
+  # Keep remote access available with the lid closed, on battery or AC power.
+  # Explicit suspend and the power button keep their normal behavior.
+  services.logind.settings.Login = {
+    HandleLidSwitch = "ignore";
+    HandleLidSwitchExternalPower = "ignore";
+    HandleLidSwitchDocked = "ignore";
+  };
+
   services.openssh = {
     enable = true;
     openFirewall = true;

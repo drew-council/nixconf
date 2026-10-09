@@ -60,6 +60,11 @@ CAPTCHAs, SMS/email codes, and push approvals can still require your participati
 Normal autofill avoids exposing passwords to the model; unrestricted shell access
 is not a guarantee that the agent cannot retrieve its approved credentials.
 
+Authenticated medical application contents are private to Hermes under the
+user's chosen ZDR provider policy. Maintenance assistants must not read private
+page text, screenshots, records, or Hermes session transcripts. Validate externally
+using only service health and generic login/verification status signals.
+
 Use `nh os switch` on XPS to apply changes. Inspect the services with
 `systemctl status hermes-dashboard hermes-browser` or
 `journalctl -u hermes-dashboard -u hermes-browser`.

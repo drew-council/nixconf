@@ -14,6 +14,12 @@ let
   # Public vault ID; authority is enforced by the read-only service-account token.
   agentAccessVault = "yioyf5x7vjgn2z53mz7gevaagy";
   browserProfile = "${hermesHome}/browser-agent-access";
+  hermesEnvironment = {
+    HOME = vars.home;
+    HERMES_HOME = hermesHome;
+    OP_LOAD_DESKTOP_APP_SETTINGS = "false";
+    PATH = lib.mkForce "${vars.home}/.nix-profile/bin:/etc/profiles/per-user/${vars.user}/bin:/run/current-system/sw/bin:/run/wrappers/bin";
+  };
   hermesOp = pkgs.writeShellApplication {
     name = "hermes-op";
     text = ''
@@ -112,6 +118,39 @@ in
     };
   };
 
+  # Standard Hermes messaging/cron gateway, supervised declaratively by NixOS.
+  # The dashboard below owns the Android/WebSocket listener on port 9119.
+  systemd.services.hermes-gateway = {
+    description = "Hermes messaging and cron gateway";
+    wantedBy = [ "multi-user.target" ];
+    after = [
+      "network-online.target"
+      "home-manager-${vars.user}.service"
+      "hermes-browser.service"
+    ];
+    wants = [
+      "network-online.target"
+      "hermes-browser.service"
+    ];
+    unitConfig.ConditionPathExists = "${hermesHome}/.env";
+    restartTriggers = [ managedConfig ];
+    environment = hermesEnvironment // {
+      HERMES_DASHBOARD = "0";
+    };
+    serviceConfig = {
+      ExecStart = "${lib.getExe hermes} gateway run --external-supervisor";
+      EnvironmentFile = "${hermesHome}/.env";
+      User = vars.user;
+      Group = "users";
+      WorkingDirectory = vars.home;
+      Restart = "on-failure";
+      RestartSec = 5;
+      RestartPreventExitStatus = [ 78 ];
+      TimeoutStopSec = 180;
+      UMask = "0077";
+    };
+  };
+
   systemd.services.hermes-dashboard = {
     description = "Hermes Agent official web dashboard and chat";
     wantedBy = [ "multi-user.target" ];
@@ -127,12 +166,7 @@ in
     unitConfig.ConditionPathExists = "${hermesHome}/.env";
     restartTriggers = [ managedConfig ];
 
-    environment = {
-      HOME = vars.home;
-      HERMES_HOME = hermesHome;
-      OP_LOAD_DESKTOP_APP_SETTINGS = "false";
-      PATH = lib.mkForce "${vars.home}/.nix-profile/bin:/etc/profiles/per-user/${vars.user}/bin:/run/current-system/sw/bin:/run/wrappers/bin";
-    };
+    environment = hermesEnvironment;
     serviceConfig = {
       ExecStart = "${lib.getExe hermes} dashboard --host 0.0.0.0 --port ${toString port} --no-open --skip-build";
       EnvironmentFile = "${hermesHome}/.env";

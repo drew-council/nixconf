@@ -22,6 +22,28 @@ writable `~/.hermes/config.yaml` on activation, preserving other settings. Dashb
 edits work immediately, but edits to these Nix-managed settings are reset on the
 next activation; change `hermes.nix` to make them persistent.
 
+## Gateway and Android
+
+`hermes-gateway.service` runs Hermes's standard `gateway run` messaging/cron
+process as a NixOS system service at boot, using the pinned package and existing
+`.env`/config. It does not spawn a second dashboard. No messaging platform is
+implicitly enabled or made public; configure platform credentials/settings when
+adding Telegram, Discord, or another integration. Without any configured platform,
+Hermes keeps the gateway running for scheduled jobs. Do not run `hermes gateway
+install`: Nix owns this service. Lifecycle commands should target the system scope
+(e.g. `hermes gateway status --system`).
+
+[Hermes for Android](https://github.com/adebnar/hermes-android) connects to the
+existing dashboard at **http://192.168.1.145:9119**. Use username **drew** and the
+**Hermes XPS** password from Private; leave Token blank. This is not your 1Password
+account password. The standalone gateway's running/off indicator is independent
+of the dashboard listener. No additional connector/plugin or public port is needed.
+
+The app's optional **Scan QR** accepts a v1 JSON payload containing `url`,
+`username`, and optionally `password` or `token`. A QR containing only the URL and
+username is safe to display; enter the password on the phone afterward. Do not
+publish a credential-bearing pairing QR in logs or maintenance chat.
+
 ## Browser logins through 1Password
 
 The **Agent Access** custom vault is the access boundary. The **Hermes XPS Agent
@@ -66,5 +88,5 @@ page text, screenshots, records, or Hermes session transcripts. Validate externa
 using only service health and generic login/verification status signals.
 
 Use `nh os switch` on XPS to apply changes. Inspect the services with
-`systemctl status hermes-dashboard hermes-browser` or
-`journalctl -u hermes-dashboard -u hermes-browser`.
+`systemctl is-active hermes-dashboard hermes-browser hermes-gateway`. Do not fetch
+private runtime logs/session transcripts into maintenance contexts.

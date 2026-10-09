@@ -1,4 +1,5 @@
 {
+  config,
   vars,
   ...
 }:
@@ -15,6 +16,12 @@
     HandleLidSwitchExternalPower = "ignore";
     HandleLidSwitchDocked = "ignore";
   };
+
+  # NixOS uses reloadIfChanged for logind to avoid disrupting user sessions.
+  # Tie its unit to the config file so switches actually reload changed policy.
+  systemd.services.systemd-logind.restartTriggers = [
+    config.environment.etc."systemd/logind.conf".source
+  ];
 
   services.openssh = {
     enable = true;

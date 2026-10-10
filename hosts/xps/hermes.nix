@@ -71,6 +71,10 @@ let
         default = "deepseek/deepseek-v4.1-flash";
         base_url = "https://openrouter.ai/api/v1";
       };
+      # MacroDroid posts to its own receiver, not the Twilio messaging adapter.
+      # Telephony credentials alone must not auto-enable an unconfigured channel
+      # and make gateway startup exit 78 when TWILIO_PHONE_NUMBER is absent.
+      sms.enabled = false;
       delegation = {
         provider = "openrouter";
         model = "deepseek/deepseek-v4.1-flash";
@@ -190,6 +194,25 @@ in
       Restart = "on-failure";
       RestartSec = 5;
       RestartPreventExitStatus = [ 78 ];
+      UMask = "0077";
+    };
+  };
+
+  # MacroDroid's private receiver is independent of the agent gateway/dashboard.
+  # Keep its implementation/token in Hermes's private runtime, not the Nix store.
+  systemd.services.hermes-sms-receiver = {
+    description = "Hermes MacroDroid SMS receiver";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    unitConfig.ConditionPathExists = "${hermesHome}/sms/webhook_receiver.py";
+    serviceConfig = {
+      ExecStart = "${pkgs.python3}/bin/python3 ${./hermes-sms-receiver.py} ${hermesHome}/sms/webhook_receiver.py --port ${toString smsReceiverPort}";
+      User = vars.user;
+      Group = "users";
+      WorkingDirectory = "${hermesHome}/sms";
+      Restart = "on-failure";
+      RestartSec = 5;
       UMask = "0077";
     };
   };

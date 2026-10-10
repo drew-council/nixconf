@@ -15,6 +15,16 @@ on boot at <http://192.168.1.145:9119>.
   MacroDroid must reach XPS over the home LAN; cellular access is not enabled.
   Keep receiver credentials in its private runtime configuration, not Nix.
   The diagnostic server on TCP 8789 is intentionally not allowed.
+- `hermes-sms-receiver.service` separately supervises the MacroDroid receiver
+  on TCP 8788. Its private implementation and forwarding token stay in
+  `~/.hermes/sms/webhook_receiver.py` and `~/.hermes/.env`, outside Nix/store.
+  The Nix launcher permits only its authenticated MacroDroid POST route,
+  rejects legacy unauthenticated Twilio ingress, and bounds request size.
+  The existing phone-side sender filter and forwarding URL/token are preserved.
+- The Twilio SMS messaging adapter is explicitly disabled (`sms.enabled: false`).
+  Telephony credentials must not auto-enable it without a configured Twilio
+  phone number, which otherwise causes gateway startup to exit 78. This does
+  not disable MacroDroid forwarding or the Android/dashboard transport.
 
 Secrets live in `/home/drew/.hermes/.env` (mode 600, directory 700), never in Nix
 or the store. It contains `OPENROUTER_API_KEY`, `COMPOSIO_API_KEY`, and the dashboard

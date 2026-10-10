@@ -1,0 +1,137 @@
+--- a/ui-tui/src/types.ts
++++ b/ui-tui/src/types.ts
+@@ -192,6 +192,7 @@
+ }
+ 
+ export interface SecretReq {
++  kind?: 'vault.code'
+   envVar: string
+   prompt: string
+   requestId: string
+--- a/ui-tui/src/app/createServerRequestHandler.ts
++++ b/ui-tui/src/app/createServerRequestHandler.ts
+@@ -20,8 +20,8 @@
+  * (`tui_gateway/server_requests.py`). Each method opens its overlay card;
+  * the card's answer path resolves the request through `serverRequestStore`.
+  * Methods the terminal cannot answer (desktop GUI bridges: `preview.*`,
+- * `window.read`, `tour`, `mcp.setup`, `terminal.read`, the vault card
+- * prompts) return `false` so the channel answers `-32601` and the tool
++ * `window.read`, `tour`, `mcp.setup`, `terminal.read`, `vault.save_login`)
++ * return `false` so the channel answers `-32601` and the tool
+  * fails fast instead of waiting out its deadline.
+  */
+ export function createServerRequestHandler(ctx: ServerRequestHandlerContext): (request: ServerRequest) => boolean {
+@@ -93,6 +93,21 @@
+ 
+         return true
+ 
++      // The dashboard embeds this TUI over PTY; codes must use the masked
++      // input, never the chat composer or its persisted history.
++      case 'vault.code':
++        patchOverlayState({
++          secret: {
++            kind: 'vault.code',
++            envVar: '',
++            prompt: `Verification code${str(p.site) ? ` for ${str(p.site)}` : ''}`,
++            requestId: request.id
++          }
++        })
++        open(request, 'verification code needed')
++
++        return true
++
+       case 'secret':
+         patchOverlayState({ secret: { envVar: str(p.env_var), prompt: str(p.prompt), requestId: request.id } })
+         open(request, 'secret input needed')
+--- a/ui-tui/src/components/appOverlays.tsx
++++ b/ui-tui/src/components/appOverlays.tsx
+@@ -171,9 +171,14 @@
+         <MaskedPrompt
+           cols={cols}
+           icon="🔑"
++          key={overlay.secret.requestId}
+           label={overlay.secret.prompt}
+           onSubmit={onSecretSubmit}
+-          sub={`for ${overlay.secret.envVar}`}
++          sub={
++            overlay.secret.kind === 'vault.code'
++              ? 'one-time code · hidden · sent directly to browser · Esc cancels'
++              : `for ${overlay.secret.envVar}`
++          }
+           t={theme}
+         />
+       </PromptCell>
+--- a/ui-tui/src/app/useMainApp.ts
++++ b/ui-tui/src/app/useMainApp.ts
+@@ -1169,6 +1169,12 @@
+ 
+       const requestId = overlay.secret.requestId
+ 
++      if (overlay.secret.kind === 'vault.code') {
++        value = value.trim()
++        // Only Esc explicitly cancels; empty Return must keep the prompt open.
++        if (!value) return
++      }
++
+       if (!value) {
+         patchOverlayState({ secret: null })
+       }
+--- a/ui-tui/src/app/useInputHandlers.ts
++++ b/ui-tui/src/app/useInputHandlers.ts
+@@ -161,7 +161,7 @@
+     const requestId = overlay.secret.requestId
+ 
+     patchOverlayState({ secret: null })
+-    sys('secret entry cancelled')
++    sys(overlay.secret.kind === 'vault.code' ? 'verification code cancelled' : 'secret entry cancelled')
+ 
+     respondToServerRequest(requestId, { value: '' })
+ 
+--- a/ui-tui/src/__tests__/createGatewayEventHandler.test.ts
++++ b/ui-tui/src/__tests__/createGatewayEventHandler.test.ts
+@@ -1319,9 +1319,17 @@
+   })
+ 
+   it('declines the requests a terminal cannot answer so the channel fails them fast', () => {
+-    for (const method of ['preview.act', 'window.read', 'tour', 'mcp.setup', 'vault.code']) {
++    for (const method of ['preview.act', 'window.read', 'tour', 'mcp.setup']) {
+       expect(serverRequest(method, {}).handled).toBe(false)
+     }
++  })
++
++  it('accepts vault.code on the masked transient input used by dashboard PTY', () => {
++    const params = { session_id: 'focused', site: 'synthetic.invalid', hint: 'fixture' }
++    expect(serverRequest('vault.code', params, 'srq-code').handled).toBe(true)
++    expect(getOverlayState().secret).toMatchObject({
++      kind: 'vault.code', envVar: '', prompt: 'Verification code for synthetic.invalid', requestId: 'srq-code'
++    })
+   })
+ 
+   it('still surfaces terminal turn failures as errors', () => {
+--- a/ui-tui/src/__tests__/useInputHandlers.test.ts
++++ b/ui-tui/src/__tests__/useInputHandlers.test.ts
+@@ -178,6 +178,24 @@
+     expect(respond).toHaveBeenCalledWith({ value: '' })
+   })
+ 
++  it('explicitly cancels vault.code with the original request id and no chat RPC', () => {
++    resetOverlayState()
++    resetServerRequestsForTests()
++    patchOverlayState({
++      secret: { kind: 'vault.code', envVar: '', prompt: 'Verification code', requestId: 'srq-code' }
++    })
++    const respond = openRequest('srq-code', 'vault.code')
++    const rpc = vi.fn()
++    const sys = vi.fn()
++
++    dismissSensitivePrompt(getOverlayState(), rpc, sys)
++
++    expect(getOverlayState().secret).toBeNull()
++    expect(respond).toHaveBeenCalledExactlyOnceWith({ value: '' })
++    expect(rpc).not.toHaveBeenCalled()
++    expect(sys).toHaveBeenCalledWith('verification code cancelled')
++  })
++
+   it('clears a secret overlay even when its request already expired (nothing left to answer)', () => {
+     resetOverlayState()
+     resetServerRequestsForTests()

@@ -6,7 +6,20 @@
   ...
 }:
 let
-  hermes = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.hermes-agent;
+  upstreamHermes = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.hermes-agent;
+  # /chat embeds the Ink TUI over PTY, not the Desktop prompt renderer.
+  # Patch only that pinned bundle; leave backend/auth/browser dependencies intact.
+  hermesFrontend = upstreamHermes.hermes-frontend.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./patches/hermes-vault-code.patch ];
+  });
+  hermes = upstreamHermes.overrideAttrs (old: {
+    makeWrapperArgs = map (
+      arg: builtins.replaceStrings [ "${upstreamHermes.hermes-frontend}" ] [ "${hermesFrontend}" ] arg
+    ) old.makeWrapperArgs;
+    passthru = old.passthru // {
+      hermes-frontend = hermesFrontend;
+    };
+  });
   python = pkgs.python3.withPackages (p: [ p.pyyaml ]);
   hermesHome = "${vars.home}/.hermes";
   port = 9119;

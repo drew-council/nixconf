@@ -79,6 +79,32 @@ when removing access. Treat browser cookies as credentials. Vault scoping limits
 credential access, not the actions those website accounts permit; shared SSO
 accounts may grant access to multiple applications. Hardware keys, passkeys,
 CAPTCHAs, SMS/email codes, and push approvals can still require your participation.
+
+### Verification-code delivery
+
+The official dashboard's `/chat` embeds the Ink TUI over PTY; its React sidebar
+has a separate metadata session, not the chat session. The pinned upstream TUI
+rejected `vault.code` requests even though Desktop/shared transport supported
+that contract. `patches/hermes-vault-code.patch` adds the code prompt to the real
+embedded TUI's existing masked input. Return sends a nonempty value directly as
+`{result: {value: "…"}}` with the original string request ID; Esc explicitly
+cancels. Codes never go through the chat composer or its history. Empty Return
+keeps the prompt open. Refresh reconnects to the pending prompt within the
+backend's existing 180-second deadline; a backend restart is not a replay.
+
+`hermes.nix` patches only the pinned frontend derivation and redirects the Hermes
+wrapper to it. It does not change backend versions, auth, network exposure,
+browser sandbox/profile, or Agent Access authority. Native dashboard and WS
+integration evidence and reproduction are in `tests/README.md`.
+
+Activation is parent/operator-owned: apply the NixOS configuration on XPS with
+`sudo nixos-rebuild switch --flake path:/home/drew/nixconf#xps` from an existing
+authorized activation context. The `path:` form includes the new patch before
+Git integration; ordinary Git-backed flakes require the patch to be tracked.
+The changed package restarts Nix-owned services; an already-running old PTY must
+be replaced before testing the new prompt. Do not launch a replacement user
+gateway, unlock 1Password, or change the browser service. Synthetic fixture
+success is not proof of any real account login or real-phone delivery.
 Normal autofill avoids exposing passwords to the model; unrestricted shell access
 is not a guarantee that the agent cannot retrieve its approved credentials.
 

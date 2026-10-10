@@ -111,10 +111,13 @@ wrapper to it. It does not change backend versions, auth, network exposure,
 browser sandbox/profile, or Agent Access authority. Native dashboard and WS
 integration evidence and reproduction are in `tests/README.md`.
 
-Activation is parent/operator-owned: apply the NixOS configuration on XPS with
-`sudo nixos-rebuild switch --flake path:/home/drew/nixconf#xps` from an existing
-authorized activation context. The `path:` form includes the new patch before
-Git integration; ordinary Git-backed flakes require the patch to be tracked.
+Commit and push changes first, then run `git pull --ff-only` in XPS's
+`/home/drew/nixconf` checkout and apply them with `nh os switch` in the existing
+operator-authorized SSH terminal. Do not manually select store generations.
+If the temporary `hermes-sms-receiver-preview.service` was started for testing,
+stop that owned user unit with `systemctl --user stop hermes-sms-receiver-preview.service`
+before switching: it otherwise holds TCP 8788 and prevents the permanent SMS
+receiver from starting. This cleanup does not stop the gateway or dashboard.
 The changed package restarts Nix-owned services; an already-running old PTY must
 be replaced before testing the new prompt. Do not launch a replacement user
 gateway, unlock 1Password, or change the browser service. Synthetic fixture
@@ -128,5 +131,6 @@ page text, screenshots, records, or Hermes session transcripts. Validate externa
 using only service health and generic login/verification status signals.
 
 Use `nh os switch` on XPS to apply changes. Inspect the services with
-`systemctl is-active hermes-dashboard hermes-browser hermes-gateway`. Do not fetch
+`systemctl is-active hermes-dashboard hermes-browser hermes-gateway hermes-sms-receiver`.
+Check receiver reachability using `/health`, never actual SMS contents. Do not fetch
 private runtime logs/session transcripts into maintenance contexts.

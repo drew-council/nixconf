@@ -23,6 +23,7 @@ let
   python = pkgs.python3.withPackages (p: [ p.pyyaml ]);
   hermesHome = "${vars.home}/.hermes";
   port = 9119;
+  smsReceiverPort = 8788;
   browserPort = 9223;
   # Public vault ID; authority is enforced by the read-only service-account token.
   agentAccessVault = "yioyf5x7vjgn2z53mz7gevaagy";
@@ -67,7 +68,7 @@ let
     builtins.toJSON {
       model = {
         provider = "openrouter";
-        default = "mistralai/mistral-large-4-0";
+        default = "deepseek/deepseek-v4.1-flash";
         base_url = "https://openrouter.ai/api/v1";
       };
       delegation = {
@@ -194,11 +195,13 @@ in
   };
 
   # Base disables the firewall; enable it only on XPS. Keep the existing service
-  # allowances (including SSH), but expose the dashboard only to the home LAN.
+  # allowances (including SSH). Expose the dashboard and Hermes-managed
+  # MacroDroid SMS receiver only to the home LAN, not the diagnostic server.
   networking.firewall = {
     enable = lib.mkForce true;
     extraCommands = ''
       iptables -A nixos-fw -s 192.168.1.0/24 -p tcp --dport ${toString port} -j nixos-fw-accept
+      iptables -A nixos-fw -s 192.168.1.0/24 -p tcp --dport ${toString smsReceiverPort} -j nixos-fw-accept
     '';
   };
 }

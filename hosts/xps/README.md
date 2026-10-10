@@ -5,12 +5,16 @@ Hermes is installed only on XPS from the pinned `llm-agents` flake input. Its
 on boot at <http://192.168.1.145:9119>.
 
 - Login: `drew`; password in the **Hermes XPS** item in 1Password's Private vault.
-- Main model: `mistralai/mistral-large-4-0` through OpenRouter.
+- Main model: `deepseek/deepseek-v4.1-flash` through OpenRouter.
 - Delegated agents: `deepseek/deepseek-v4.1-flash`, reasoning effort `high`.
 - Composio: the same personal Composio Connect MCP account as Pi, with all its
   discovery/execution tools available and no added toolkit allowlist.
-- Firewall: dashboard access is restricted to `192.168.1.0/24`. Existing service
-  allowances, including SSH, remain in place. No router forwarding is configured.
+- Firewall: dashboard TCP 9119 and the Hermes-managed MacroDroid SMS receiver
+  TCP 8788 are restricted to `192.168.1.0/24`. Existing service allowances,
+  including SSH, remain in place. No router forwarding is configured.
+  MacroDroid must reach XPS over the home LAN; cellular access is not enabled.
+  Keep receiver credentials in its private runtime configuration, not Nix.
+  The diagnostic server on TCP 8789 is intentionally not allowed.
 
 Secrets live in `/home/drew/.hermes/.env` (mode 600, directory 700), never in Nix
 or the store. It contains `OPENROUTER_API_KEY`, `COMPOSIO_API_KEY`, and the dashboard

@@ -70,6 +70,7 @@ let
     screen
     herdr # fancy terminal multiplexer
     tmux # simple terminal multiplexer
+    signal-cli # CLI interactions with signal chat
     (aspellWithDicts (dictionaries: with dictionaries; [ en ]))
 
     # Document tools

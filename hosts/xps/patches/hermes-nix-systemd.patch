@@ -1,0 +1,140 @@
+--- a/hermes_cli/gateway_service_unit.py
++++ b/hermes_cli/gateway_service_unit.py
+@@ -274,6 +274,11 @@
+     )
+ 
+ 
++def _systemd_unit_is_nix_managed(unit_path: Path) -> bool:
++    """Nix store units belong to Nix, not the Hermes service installer."""
++    return Path("/nix/store") in unit_path.resolve().parents
++
++
+ def systemd_unit_is_current(system: bool = False) -> bool:
+     # HERMES_HOME sync chokepoint for every compare/regenerate path: under `sudo … --system` it is often
+     # stripped to /root/.hermes, so refresh would rewrite a correct unit and status warn forever.
+@@ -284,6 +289,9 @@
+     if not unit_path.exists():
+         return False
+ 
++    if _systemd_unit_is_nix_managed(unit_path):
++        return True
++
+     installed = unit_path.read_text(encoding="utf-8")
+     expected_user = _gw()._read_systemd_user_from_unit(unit_path) if system else None
+     expected = _gw().generate_systemd_unit(system=system, run_as_user=expected_user)
+@@ -351,6 +359,10 @@
+     if not unit_path.exists():
+         return False
+ 
++    if _systemd_unit_is_nix_managed(unit_path):
++        _gw()._sync_hermes_home_from_systemd_unit(system=system)
++        return False
++
+     # _gw().systemd_unit_is_current is the HERMES_HOME-sync chokepoint; its env mutation persists for the regenerate below.
+     current = _gw().systemd_unit_is_current(system=system)
+     if _retire_hermes_replace_dropin(system=system):
+--- a/hermes_cli/gateway.py
++++ b/hermes_cli/gateway.py
+@@ -81,6 +81,7 @@
+     _SYSTEMD_OPTIONAL_DIRECTIVES,
+     _strip_optional_systemd_directives,
+     _normalize_launchd_plist_for_comparison,
++    _systemd_unit_is_nix_managed,
+     systemd_unit_is_current,
+     _temp_home_in_service_definition,
+     _refuse_temp_home_service_write,
+@@ -3124,6 +3125,10 @@
+     if system:
+         _require_root_for_system_service("install")
+ 
++    if _systemd_unit_is_nix_managed(get_systemd_unit_path(system=system)):
++        print("Gateway service is managed by Nix; use nh os switch to change it.")
++        return
++
+     # Offer to remove legacy units first: alongside the new unit they flap-fight for the bot token.
+     if has_legacy_hermes_units():
+         print()
+@@ -3223,6 +3228,9 @@
+ 
+ def systemd_uninstall(system: bool = False):
+     system = _systemd_scope_preamble("uninstall", system, require_installed=False)
++    if _systemd_unit_is_nix_managed(get_systemd_unit_path(system=system)):
++        print("Gateway service is managed by Nix; remove it from the Nix configuration.")
++        return
+     if not _systemd_unit_belongs_to_current_home(system):
+         return
+     _run_systemctl(["stop", get_service_name()], system=system, check=False, timeout=90)
+--- /dev/null
++++ b/tests/test_nix_systemd_unit.py
+@@ -0,0 +1,71 @@
++"""Standalone regression tests; no Hermes runtime dependencies required."""
++
++import importlib.util
++import tempfile
++import unittest
++from pathlib import Path
++from unittest.mock import Mock, patch
++
++spec = importlib.util.spec_from_file_location(
++    "gateway_service_unit", "hermes_cli/gateway_service_unit.py"
++)
++unit = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(unit)
++
++
++class NixSystemdUnitTests(unittest.TestCase):
++    def test_resolved_store_path_is_managed(self):
++        path = Mock()
++        path.resolve.return_value = Path("/nix/store/example/unit.service")
++        self.assertTrue(unit._systemd_unit_is_nix_managed(path))
++        path.resolve.return_value = Path("/nix/store-lookalike/unit.service")
++        self.assertFalse(unit._systemd_unit_is_nix_managed(path))
++
++    def test_nix_unit_is_current_without_generating_a_replacement(self):
++        path = Mock()
++        path.resolve.return_value = Path("/nix/store/example/unit.service")
++        facade = Mock()
++        facade.get_systemd_unit_path.return_value = path
++        with patch.object(unit, "_gw", return_value=facade):
++            self.assertTrue(unit.systemd_unit_is_current(system=True))
++        facade._sync_hermes_home_from_systemd_unit.assert_called_once_with(
++            system=True
++        )
++        facade.generate_systemd_unit.assert_not_called()
++        path.read_text.assert_not_called()
++
++    def test_refresh_never_writes_or_reloads_a_nix_unit(self):
++        path = Mock()
++        path.resolve.return_value = Path("/nix/store/example/unit.service")
++        facade = Mock()
++        facade.get_systemd_unit_path.return_value = path
++        with patch.object(unit, "_gw", return_value=facade):
++            self.assertFalse(unit.refresh_systemd_unit_if_needed(system=True))
++        facade._sync_hermes_home_from_systemd_unit.assert_called_once_with(
++            system=True
++        )
++        facade.generate_systemd_unit.assert_not_called()
++        facade._run_systemctl.assert_not_called()
++        path.write_text.assert_not_called()
++
++    def test_native_units_can_still_be_refreshed(self):
++        with tempfile.TemporaryDirectory() as directory:
++            path = Path(directory) / "hermes-gateway.service"
++            path.write_text("old unit")
++            facade = Mock()
++            facade.get_systemd_unit_path.return_value = path
++            facade.systemd_unit_is_current.return_value = False
++            facade.generate_systemd_unit.return_value = "new unit"
++            facade._refuse_temp_home_service_write.return_value = False
++            with patch.object(unit, "_gw", return_value=facade):
++                self.assertTrue(
++                    unit.refresh_systemd_unit_if_needed(system=True)
++                )
++            self.assertEqual(path.read_text(), "new unit")
++            facade._run_systemctl.assert_called_once_with(
++                ["daemon-reload"], system=True, check=True, timeout=30
++            )
++
++
++if __name__ == "__main__":
++    unittest.main()

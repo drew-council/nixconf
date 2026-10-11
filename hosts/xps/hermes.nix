@@ -12,6 +12,10 @@ let
     patches = (old.patches or [ ]) ++ [ ./patches/hermes-vault-code.patch ];
   });
   hermes = upstreamHermes.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./patches/hermes-nix-systemd.patch ];
+    postPatch = (old.postPatch or "") + ''
+      ${pkgs.python3}/bin/python tests/test_nix_systemd_unit.py
+    '';
     makeWrapperArgs = map (
       arg: builtins.replaceStrings [ "${upstreamHermes.hermes-frontend}" ] [ "${hermesFrontend}" ] arg
     ) old.makeWrapperArgs;

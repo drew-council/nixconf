@@ -9,6 +9,7 @@
     ./hardware-configuration.nix
     ./hermes.nix
     ./git.nix
+    ./peanut-map.nix
   ];
 
   services.logind.settings.Login = {

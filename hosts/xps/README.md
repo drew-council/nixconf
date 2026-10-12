@@ -8,9 +8,19 @@ Hermes runs on `192.168.1.145`. Closing the lid leaves the host running.
 | `hermes-gateway` | Messaging and scheduled jobs |
 | `hermes-browser` | CDP `127.0.0.1:9223` |
 | `hermes-sms-receiver` | Health: <http://192.168.1.145:8788/health> |
+| `peanut-map` | <https://peanutmap.home.drewcouncil.com> (direct: <http://192.168.1.145:8765>) |
 
 Dashboard login: `drew`; password in 1Password's **Hermes XPS** item.
-Dashboard and SMS access are restricted to `192.168.1.0/24`.
+Dashboard, SMS and peanut map access are restricted to `192.168.1.0/24`.
+
+## Peanut map
+
+`peanut-map` serves a read-only map from `~/personal/placeparse` using that
+checkout's `.venv`; it cannot write to `/home`. Replies show up without a
+restart. After pulling changes there, run `uv sync`, rebuild the frontend with
+`npm --prefix peanut_map/frontend ci` and `npm --prefix peanut_map/frontend run build`,
+then `sudo systemctl restart peanut-map`. tungsten's nginx-proxy-manager
+provides the HTTPS name.
 
 ## Runtime files
 
@@ -33,4 +43,4 @@ Keep the private key outside Git/Nix; revoke its GitHub registration if compromi
 
 After publishing changes, run `git pull --ff-only` and `nh os switch` in XPS's
 `~/nixconf` checkout. Nix owns the services; do not install another Hermes gateway.
-Check status with `systemctl is-active hermes-dashboard hermes-gateway hermes-browser hermes-sms-receiver`.
+Check status with `systemctl is-active hermes-dashboard hermes-gateway hermes-browser hermes-sms-receiver peanut-map`.

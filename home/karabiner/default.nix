@@ -461,6 +461,14 @@ let
       {
         name = "Default profile";
         selected = true;
+        # Karabiner grabs the keyboard, bypassing the System Settings
+        # modifier-key remaps, so Caps Lock -> Escape has to live here.
+        simple_modifications = [
+          {
+            from.key_code = "caps_lock";
+            to = [ { key_code = "escape"; } ];
+          }
+        ];
         complex_modifications.rules = rules;
         devices = [ mxMaster3S ];
         virtual_hid_keyboard.keyboard_type_v2 = "ansi";

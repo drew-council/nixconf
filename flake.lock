@@ -398,11 +398,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791379781,
-        "narHash": "sha256-PhmSms4TsgipJCVj4zEoqEF5YG43x6rlpXWBNfHmuqU=",
+        "lastModified": 1791828031,
+        "narHash": "sha256-ktfdfnjI0LwM2hkENRTZK3yiRlvFgjKAZTToQ+et1vI=",
         "owner": "drew-council",
         "repo": "gchat-desktop",
-        "rev": "60f8e8a4d21679767aff2030ba5dd7059e610433",
+        "rev": "cef287bbcaa1cc7acff1628edf9359979f55dca2",
         "type": "github"
       },
       "original": {
@@ -607,11 +607,11 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1791817587,
-        "narHash": "sha256-LEjDUWWU5qhinPh2/uJg0jIyRvvdZkWILeGnsC9c8zs=",
+        "lastModified": 1791830869,
+        "narHash": "sha256-6JkVAadW+25LvCUfhcQJxX8Cddufq9AWHmoscgmHFIA=",
         "owner": "hyprwm",
         "repo": "Hyprland",
-        "rev": "6a1b5f0fbfa169d4e6cf2f49a5f919a273aeaec7",
+        "rev": "6cc0822e24ad18df62689de80593541a61b49924",
         "type": "github"
       },
       "original": {
@@ -856,11 +856,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1791781982,
-        "narHash": "sha256-lvEyxEmXv/8gwiWE2+rxTuL59EFq5wwXxX+rtbxjwLo=",
+        "lastModified": 1791825863,
+        "narHash": "sha256-wvOPLTxLvUXseMmcwoI5eOfPmw+0MiSNvcBH5GUF3io=",
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "493c34b1bed086861b0e968a40d00bd06522f003",
+        "rev": "dc285bfd94ec7a89118d17eb288728439876558c",
         "type": "github"
       },
       "original": {
@@ -1049,11 +1049,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1790600678,
-        "narHash": "sha256-6k3n7X2UsZ6tAlWTz99RimiZab+17tMUrw9sRUcELiA=",
+        "lastModified": 1791306662,
+        "narHash": "sha256-bIhK7AMT7yU8Hkjzaag0MDpqbqiMTvN6UJ0U6Zs63OI=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f45c6f04c2f013f004bf94e284e95d72898d9393",
+        "rev": "e2ccecbf30866802b1db536246e0939eccbd7bfb",
         "type": "github"
       },
       "original": {
@@ -1531,11 +1531,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1791822024,
-        "narHash": "sha256-5JtZoeKFmReS3H8u5F8RFhxln54C2hov30GfrERXJTo=",
+        "lastModified": 1791831998,
+        "narHash": "sha256-0/D9Oe9wVISiK6uB32K6lb7hrRLwSnovbICkKujthF4=",
         "owner": "drew-council",
         "repo": "tuicr",
-        "rev": "2e40afa5baffc438821cdd576a9aecdeaff79cc4",
+        "rev": "050f0f8f4366910ab11ea8eadfe894437999898c",
         "type": "github"
       },
       "original": {

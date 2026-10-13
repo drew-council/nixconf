@@ -1531,11 +1531,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1791831998,
-        "narHash": "sha256-0/D9Oe9wVISiK6uB32K6lb7hrRLwSnovbICkKujthF4=",
+        "lastModified": 1791901787,
+        "narHash": "sha256-CCURXaRjPU+V9PznrQKZPjiAtu1ODFd5mzJLkllPZcs=",
         "owner": "drew-council",
         "repo": "tuicr",
-        "rev": "050f0f8f4366910ab11ea8eadfe894437999898c",
+        "rev": "5ea82dc17bbff5d02c664bb5011c8e373ab84960",
         "type": "github"
       },
       "original": {

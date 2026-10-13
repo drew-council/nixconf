@@ -23,3 +23,12 @@ comment_types = [
 
 [forge]
 comment_type_prefix = true
+
+# AI review order + overview for PRs, via Gemini on Vertex AI. The GCP project
+# comes from the credentials' quota project (`gcloud auth application-default
+# set-quota-project`), so no account details live in this repo.
+[review_guide]
+enabled = true
+model = "gemini-3.8-flash"
+thinking = "low"
+credentials_file = "~/.config/gcloud/application_default_credentials.json"

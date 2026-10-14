@@ -51,6 +51,7 @@ def prs [limit: int drafts: bool dependabot: bool all: bool] {
   | flatten
   | uniq-by number
   | sort-by updatedAt --reverse
+  | sort-by author.login
 }
 
 def my_login []: nothing -> string {
@@ -81,6 +82,9 @@ def main [--limit: int = 200 --drafts --dependabot --all] {
     | par-each {|pr| {pr: $pr approved: (has_approved $pr.number $me)} }
     | where {|it| not $it.approved }
     | get pr
+    # par-each returns items in completion order, so re-sort here
+    | sort-by updatedAt --reverse
+    | sort-by author.login
   )
 
   if ($candidates | is-empty) {

@@ -20,6 +20,11 @@ in
 {
   # This flake intentionally shares the host nixpkgs with nixvim.
   nixpkgs.source = pkgs.path;
+  # nixvim constructs its own nixpkgs instance, so host overlays must be
+  # re-applied here (e.g. the typescript-language-server pnpm hash fix).
+  nixpkgs.overlays = [
+    (import ../overlays/typescript-language-server.nix)
+  ];
   version.enableNixpkgsReleaseCheck = false;
 
   # set up color scheme

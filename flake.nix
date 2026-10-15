@@ -188,6 +188,11 @@
         };
       };
 
+      mkPlatform = isLinux: {
+        inherit isLinux;
+        isDarwin = !isLinux;
+      };
+
       mkHomeManager =
         {
           isLinux,
@@ -197,10 +202,7 @@
           home-manager = {
             extraSpecialArgs = {
               inherit inputs vars;
-              platform = {
-                inherit isLinux;
-                isDarwin = !isLinux;
-              };
+              platform = mkPlatform isLinux;
             };
             backupFileExtension = vars.hmBackupFileExtension;
             users.${vars.user} = {
@@ -234,6 +236,7 @@
           specialArgs = {
             inherit inputs;
             vars = linuxVars;
+            platform = mkPlatform true;
           };
           modules = [
             {
@@ -248,6 +251,7 @@
           ]
           ++ [
             ./modules/base.nix
+            ./modules/disk-cleanup.nix
             ./hosts/${hostname}/configuration.nix
             inputs.home-manager.nixosModules.home-manager
             linuxHome
@@ -283,6 +287,7 @@
         specialArgs = {
           inherit inputs;
           vars = darwinVars;
+          platform = mkPlatform false;
         };
         modules = [
           {
@@ -291,6 +296,7 @@
             };
           }
           ./hosts/macos/configuration.nix
+          ./modules/disk-cleanup.nix
           inputs.home-manager.darwinModules.home-manager
           darwinHome
         ];

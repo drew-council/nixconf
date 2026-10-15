@@ -19,6 +19,7 @@ let
     e = "${vars.defaults.editor} .";
     cx = "codex";
 
+    gl = "lg";
     ld = "lazydocker";
     hmclean = "fd '${vars.hmBackupFileExtension}' ~ -u -x rm";
     dcd = "docker compose down";

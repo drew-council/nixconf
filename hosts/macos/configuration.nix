@@ -53,6 +53,25 @@ in
   # Determinate owns the Nix daemon and its settings.
   nix.enable = false;
 
+  # With nix.enable off, nix-darwin's nix.gc is unavailable, and Determinate's
+  # own GC never deletes generations, so every darwin-system generation (72
+  # before this) stayed a GC root. Home Manager's nix.gc only reaches the
+  # user's profiles; this root job prunes /nix/var/nix/profiles.
+  launchd.daemons.nix-gc.serviceConfig = {
+    ProgramArguments = [
+      "/nix/var/nix/profiles/default/bin/nix-collect-garbage"
+      "--delete-older-than"
+      "14d"
+    ];
+    StartCalendarInterval = [
+      {
+        Weekday = 1;
+        Hour = 12;
+        Minute = 0;
+      }
+    ];
+  };
+
   # GUI apps from nixpkgs. nix-darwin copies every .app in these packages into
   # /Applications/Nix Apps during activation, so Spotlight/Launchpad find them.
   # The copies are read-only, so apps update with flake.lock, not themselves.

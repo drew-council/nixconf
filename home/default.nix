@@ -1,5 +1,6 @@
 {
   lib,
+  pkgs,
   platform,
   vars,
   ...
@@ -66,6 +67,39 @@
     automatic = true;
     dates = "weekly";
     options = "--delete-older-than 14d";
+  };
+  # On darwin the module appends `options` as a single argv element, so nix
+  # saw one unknown flag '--delete-older-than 14d' and the job failed every
+  # week. Split the arguments ourselves; Determinate's nix matches the daemon.
+  launchd.agents.nix-gc.config.ProgramArguments = lib.mkIf platform.isDarwin (
+    lib.mkForce [
+      "/nix/var/nix/profiles/default/bin/nix-collect-garbage"
+      "--delete-older-than"
+      "14d"
+    ]
+  );
+
+  # Go never caps GOCACHE (only entries unused for 5 days are trimmed) and
+  # never trims GOMODCACHE, so with a dozen worktrees running go test,
+  # gopls and Bazel (GO_REPOSITORY_USE_HOST_CACHE, see sheer.nix) they once
+  # reached ~25 GiB and ~12 GiB. Both refill on demand.
+  launchd.agents.go-clean = lib.mkIf platform.isDarwin {
+    enable = true;
+    config = {
+      ProgramArguments = [
+        (lib.getExe pkgs.go)
+        "clean"
+        "-cache"
+        "-modcache"
+      ];
+      StartCalendarInterval = [
+        {
+          Weekday = 0;
+          Hour = 12;
+          Minute = 0;
+        }
+      ];
+    };
   };
 
   # text expander

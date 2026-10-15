@@ -29,6 +29,7 @@ comment_type_prefix = true
 # set-quota-project`), so no account details live in this repo.
 [review_guide]
 enabled = true
-model = "gemini-3.8-flash"
+model = "gemini-4-argon"
 thinking = "low"
+timeout_secs = 180
 credentials_file = "~/.config/gcloud/application_default_credentials.json"

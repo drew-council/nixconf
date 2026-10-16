@@ -31,9 +31,6 @@ in
     };
   });
 
-  typescript-language-server =
-    (import ./overlays/typescript-language-server.nix self super).typescript-language-server;
-
   # atuin 18.23.0's e2e pty tests time out on darwin (same failure on Hydra,
   # so there's no cached build). Skip checks on darwin; revisit when Hydra's
   # aarch64-darwin job is green again.

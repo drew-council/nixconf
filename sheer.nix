@@ -71,7 +71,9 @@ in
       google-cloud-sdk
       opentofu
       pnpm_10 # repo pins packageManager pnpm@10.x
-      pulumi
+      # nixpkgs pulumi ships only the CLI; `pulumi up` on a `runtime: go`
+      # project needs the pulumi-language-go host on PATH too.
+      (pulumi.withPackages (ps: [ ps.pulumi-go ]))
     ]
     ++ lib.optionals platform.isLinux [
       # C compiler for cgo outside Bazel (e.g. golangci-lint via `go tool`). On

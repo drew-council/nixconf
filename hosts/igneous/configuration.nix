@@ -8,6 +8,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./agent-artifacts-proxy.nix
     ./silksong-archipelago.nix
   ];
 

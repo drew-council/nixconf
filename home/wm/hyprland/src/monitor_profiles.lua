@@ -1,4 +1,3 @@
-local core = require("nixconf.core")
 local generated = require("nixconf.generated")
 local util = require("nixconf.util")
 
@@ -297,8 +296,6 @@ function M.apply_profile(label)
 		})
 		start_sunshine()
 	end
-
-	core.set_gaps(profile == nil or not profile.noGaps)
 
 	state.active_profile = label
 	save_state()

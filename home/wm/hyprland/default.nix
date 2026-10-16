@@ -24,7 +24,6 @@ let
 
   generatedLua = {
     host = osConfig.networking.hostName;
-    laptop = osConfig.laptop.enable;
     nvidia = osConfig.nvidiaEnable;
     personal = vars.isPersonal osConfig;
     defaults = {

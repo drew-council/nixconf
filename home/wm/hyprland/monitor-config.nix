@@ -46,7 +46,6 @@ let
         dnd = {
           enabledOutputs = [ "tv" ];
           useTablet = true;
-          noGaps = true;
         };
         tv = {
           audioCardName = "alsa_card.pci-0000_03_00.1";

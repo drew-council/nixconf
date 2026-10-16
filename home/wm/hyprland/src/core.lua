@@ -2,10 +2,6 @@ local generated = require("nixconf.generated")
 
 local M = {}
 
-local gaps_in = generated.laptop and 0 or 5
-local gaps_out = generated.laptop and 0 or 10
-local rounding = generated.laptop and 0 or 14
-
 hl.window_rule({
 	name = "steam-big-picture-fullscreen",
 	match = {
@@ -29,8 +25,8 @@ hl.config({
 		force_zero_scaling = true,
 	},
 	general = {
-		gaps_in = gaps_in,
-		gaps_out = gaps_out,
+		gaps_in = 0,
+		gaps_out = 0,
 		col = {
 			active_border = {
 				colors = {
@@ -42,7 +38,7 @@ hl.config({
 		},
 	},
 	decoration = {
-		rounding = rounding,
+		rounding = 0,
 	},
 	input = {
 		kb_layout = "us",
@@ -82,17 +78,5 @@ hl.gesture({
 	direction = "horizontal",
 	action = "workspace",
 })
-
-function M.set_gaps(enabled)
-	hl.config({
-		general = {
-			gaps_in = enabled and gaps_in or 0,
-			gaps_out = enabled and gaps_out or 0,
-		},
-		decoration = {
-			rounding = enabled and rounding or 0,
-		},
-	})
-end
 
 return M

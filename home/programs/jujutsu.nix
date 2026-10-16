@@ -1,4 +1,5 @@
 {
+  lib,
   pkgs,
   vars,
   ...
@@ -24,16 +25,15 @@ in
       # Colocation keeps repositories available to Git-based tools and IDEs.
       git = {
         colocate = true;
-        # Avoid a 1Password prompt after every history rewrite.
-        # Signing is disabled entirely on macOS.
-        sign-on-push = !pkgs.stdenv.hostPlatform.isDarwin;
+        # Sign when pushing rather than after every history rewrite.
+        sign-on-push = true;
       };
 
       signing = {
         backend = "ssh";
         behavior = "drop";
-        key = personal.sshPublicKey;
-        backends.ssh.program = vcs.onePassword.sshSigner;
+        key = vcs.machineKey;
+        backends.ssh.program = lib.getExe' pkgs.openssh "ssh-keygen";
       };
     };
   };

@@ -1,5 +1,6 @@
 {
   inputs,
+  lib,
   pkgs,
   vars,
   ...
@@ -14,7 +15,6 @@ let
 
   vcs = import ./vcs-settings.nix { inherit pkgs vars; };
   publicKeys = {
-    personalGitHub = vcs.identities.personal.sshPublicKey;
     hetzner = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGogIJ4uaReEMnM8eRedZh0OVq/4AAs4H8xdiWjvf6YF";
     xps = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINPILydKagpHBNoXFBEcUxqf4wFZDD6GRY09FGfLt/EH";
   };
@@ -42,7 +42,6 @@ let
   };
 
   onePassPath = vcs.onePassword.agentSocket;
-  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   weavePackage = inputs.weave.packages.${pkgs.stdenv.hostPlatform.system}.default;
   weaveExtensions = [
     "ts"
@@ -97,6 +96,14 @@ in
 {
   home.packages = [ weavePackage ];
 
+  home.activation.createGitMachineKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ ! -f "${vcs.machineKey}" ]; then
+      run mkdir -p -m 700 "${dirOf vcs.machineKey}"
+      run ${lib.getExe' pkgs.openssh "ssh-keygen"} -q -t ed25519 -N "" \
+        -C "${vars.user}@$(uname -n) git" -f "${vcs.machineKey}"
+    fi
+  '';
+
   # -------SSH CONFIGURATION-------
   # home manager version adds several extra options i do not want
   home.file.".ssh/config".text = ''
@@ -149,24 +156,22 @@ in
   # git configuration
   programs.git =
     let
-      mkIdentityConfig = identity: publicKeyFile: {
+      mkIdentityConfig = identity: {
         user = {
           inherit (identity) name email;
-          signingkey = identity.sshPublicKey;
+          signingkey = vcs.machineKey;
         };
-        core.sshCommand = "ssh -i ${publicKeyFile}";
+        # bypass the 1Password agent set for Host * in ~/.ssh/config
+        core.sshCommand = "ssh -i ${vcs.machineKey} -o IdentitiesOnly=yes -o IdentityAgent=none";
       };
-      personalConfig = mkIdentityConfig vcs.identities.personal publicKeyFiles.personalGitHub;
+      personalConfig = mkIdentityConfig vcs.identities.personal;
     in
     {
       enable = true;
       attributes = weaveAttributes;
       lfs.enable = true;
-      signing = {
-        format = "ssh";
-        # should be declared deterministically, but can't get same pkg as in nixos config
-        signer = vcs.onePassword.sshSigner;
-      };
+      # signer defaults to nixpkgs' ssh-keygen
+      signing.format = "ssh";
       # recursive so personalConfig.core doesn't replace core below
       settings = pkgs.lib.recursiveUpdate {
         # preferences
@@ -196,8 +201,8 @@ in
           };
         };
 
-        # 1password ssh commit signing (disabled on macOS)
-        commit.gpgsign = !isDarwin;
+        # ssh commit signing with the machine key
+        commit.gpgsign = true;
       } personalConfig; # set default to personal
     };
 }

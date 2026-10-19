@@ -24,11 +24,13 @@ comment_types = [
 [forge]
 comment_type_prefix = true
 
-# AI review order + overview for PRs, via Gemini on Vertex AI. The GCP project
-# comes from the credentials' quota project (`gcloud auth application-default
-# set-quota-project`), so no account details live in this repo.
+# AI review order + overview for PRs, via Gemini on Vertex AI. The project is
+# pinned (Sheer Health's Vertex project, same as ~/.pi) rather than read from
+# the ADC quota project, which `gcloud auth application-default login` drops
+# when gcloud has no default project.
 [review_guide]
 enabled = true
+project = "optimum-nebula-375615"
 model = "gemini-4-argon"
 thinking = "low"
 timeout_secs = 180

@@ -35,3 +35,6 @@ model = "gemini-4-argon"
 thinking = "low"
 timeout_secs = 180
 credentials_file = "~/.config/gcloud/application_default_credentials.json"
+# Replaces tuicr's built-in ordering prompt; edit review_guide_prompt.md next
+# to this file. Changing it invalidates cached guides.
+system_prompt_file = "~/.config/tuicr/review_guide_prompt.md"

@@ -10,18 +10,6 @@ let
   icat = pkgs.writeShellScriptBin "icat" ''
     exec ${lib.getExe pkgs.kitty} +kitten icat "$@"
   '';
-
-  # nixpkgs exposes Zed as `zeditor`; add the expected `zed` binary to PATH.
-  zed = pkgs.symlinkJoin {
-    name = "zed";
-    paths = [ pkgs.zed-editor ];
-    meta = pkgs.zed-editor.meta // {
-      mainProgram = "zed";
-    };
-    postBuild = ''
-      ln -s "$out/bin/zeditor" "$out/bin/zed"
-    '';
-  };
 in
 {
   imports = [
@@ -87,8 +75,7 @@ in
         pdfarranger
 
         # code editors
-        zed-editor # preferred code editor
-        zed # alias
+        zed-editor # preferred code editor (fork via overlays.nix; ships zed and zeditor)
         vscodium
 
         alacritty

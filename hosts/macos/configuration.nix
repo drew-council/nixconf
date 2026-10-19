@@ -5,6 +5,8 @@
   ...
 }:
 let
+  substitutersConfig = builtins.fromJSON (builtins.readFile ../../substituters_config.json);
+
   # Declarative login item for a /Applications GUI app: RunAtLoad fires the
   # agent on every login, and `open -na` spawns the GUI app and returns
   # immediately, letting launchd consider the agent started. The path is
@@ -50,14 +52,28 @@ in
     "/System/Cryptexes/App/usr/bin"
   ];
 
-  # Determinate owns the Nix daemon and its settings.
-  nix.enable = false;
+  # Determinate owns the Nix daemon (its module forces nix.enable off) and
+  # writes these to /etc/nix/nix.custom.conf. Same binary caches as NixOS
+  # (modules/base.nix).
+  determinateNix = {
+    enable = true;
+    customSettings = lib.getAttrs [
+      "extra-substituters"
+      "extra-trusted-substituters"
+      "extra-trusted-public-keys"
+    ] substitutersConfig;
+  };
+  # The installer's empty stub; lets activation replace it.
+  environment.etc."nix/nix.custom.conf".knownSha256Hashes = [
+    "3bd68ef979a42070a44f8d82c205cfd8e8cca425d91253ec2c10a88179bb34aa"
+  ];
 
   # GUI apps from nixpkgs. nix-darwin copies every .app in these packages into
   # /Applications/Nix Apps during activation, so Spotlight/Launchpad find them.
   # The copies are read-only, so apps update with flake.lock, not themselves.
   environment.systemPackages = [
     pkgs.raycast # launcher on Command+Space; settings in home/raycast.nix
+    pkgs.zed-editor # Zed fork (overlays.nix); lands as "Zed Nightly.app", CLI is `zed`
     pkgs.ytmdesktop # desktop app for youtube music (linux uses the same package via modules/packages/graphical.nix)
   ];
 

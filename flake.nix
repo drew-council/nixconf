@@ -15,6 +15,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # nix-darwin module for Determinate Nix settings (/etc/nix/nix.custom.conf)
+    determinate.url = "github:DeterminateSystems/determinate";
+
     # secrets management through 1Password
     opnix.url = "github:brizzbuzz/opnix";
 
@@ -50,6 +53,10 @@
       url = "github:niklas-heer/tdx";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # fork with a code-review mode. Deliberately keeps its own nixpkgs (no
+    # follows) so derivation paths match zed's CI and hit zed.cachix.
+    zed.url = "github:drew-council/zed/code-review";
 
     tuicr = {
       url = "github:drew-council/tuicr/bizmythy-tweaks";
@@ -295,6 +302,7 @@
               hostPlatform = "aarch64-darwin";
             };
           }
+          inputs.determinate.darwinModules.default
           ./hosts/macos/configuration.nix
           ./modules/disk-cleanup.nix
           inputs.home-manager.darwinModules.home-manager

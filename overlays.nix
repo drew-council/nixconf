@@ -42,6 +42,29 @@ in
     else
       super.atuin;
 
+  # Zed from the drew-council fork. Its darwin build only supports the nightly
+  # channel ("Zed Nightly.app", dev.zed.Zed-Nightly); on linux build stable so
+  # the desktop entry stays dev.zed.Zed.desktop (home/xdg-mime.nix).
+  zed-editor =
+    let
+      package = inputs.zed.packages.${super.stdenv.hostPlatform.system}.default;
+    in
+    if super.stdenv.hostPlatform.isLinux then
+      package.override { releaseChannel = "stable"; }
+    else
+      package.override {
+        # The fork swaps in zed's cargo-bundle source, which nixpkgs'
+        # tests-env.patch doesn't apply to; its version check also rejects
+        # the "0.6.1-zed" version. Only used at build time to bundle the .app.
+        cargo-bundle =
+          inputs.zed.inputs.nixpkgs.legacyPackages.${super.stdenv.hostPlatform.system}.cargo-bundle.overrideAttrs
+            {
+              patches = [ ];
+              doCheck = false;
+              doInstallCheck = false;
+            };
+      };
+
   protobuf-language-server = super.callPackage ./pkgs/protobuf-language-server.nix { };
   herdr-keybinds = super.callPackage ./home/programs/herdr/keybinds-plugin/package.nix { };
   herdr-web = super.callPackage ./pkgs/herdr-web { };

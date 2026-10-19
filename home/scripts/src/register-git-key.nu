@@ -16,7 +16,7 @@ def main [] {
   )
   let title = $"(sys host | get hostname) git"
 
-  # The default gh login can add authentication keys but not signing keys
+  # The default gh login can manage neither authentication nor signing keys
   let scopes = (
     ^gh api --include user
     | lines
@@ -27,8 +27,11 @@ def main [] {
     | split row ","
     | each { str trim }
   )
-  if "admin:ssh_signing_key" not-in $scopes {
-    ^gh auth refresh --hostname github.com --scopes admin:ssh_signing_key
+  let missing = (
+    [admin:public_key admin:ssh_signing_key] | where $it not-in $scopes
+  )
+  if ($missing | is-not-empty) {
+    ^gh auth refresh --hostname github.com --scopes ($missing | str join ",")
   }
 
   let endpoints = {authentication: "user/keys" signing: "user/ssh_signing_keys"}

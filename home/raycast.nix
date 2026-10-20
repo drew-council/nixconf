@@ -1,12 +1,34 @@
-{ lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 # Raycast replaces Spotlight on Command+Space. The app itself comes from
-# nixpkgs, with a login item (hosts/macos/configuration.nix). Home Manager has
-# no Raycast module, and Raycast 2.x keeps all of its settings, the global
-# hotkey included, in an encrypted database (settings_v2.db), not in
-# com.raycast.macos defaults. Set the hotkey once in Settings > General >
-# Raycast Hotkey; use Settings > Advanced > Export to back up the rest.
+# nixpkgs, with a login item below. Home Manager has no Raycast module, and
+# Raycast 2.x keeps all of its settings, the global hotkey included, in an
+# encrypted database (settings_v2.db), not in com.raycast.macos defaults. Set
+# the hotkey once in Settings > General > Raycast Hotkey; use Settings >
+# Advanced > Export to back up the rest.
 {
+  home.packages = [ pkgs.raycast ];
+
+  # Login item: RunAtLoad fires the agent on every login, and `open -na`
+  # launches the copyApps copy (so LaunchServices sees the real bundle) and
+  # returns immediately. ProgramArguments only, as in programs/voxtype.nix.
+  launchd.agents.raycast = {
+    enable = true;
+    config = {
+      ProgramArguments = [
+        "/usr/bin/open"
+        "-na"
+        "${config.home.homeDirectory}/${config.targets.darwin.copyApps.directory}/Raycast.app"
+      ];
+      RunAtLoad = true;
+    };
+  };
+
   # Free Command+Space for Raycast by disabling Spotlight's "Show Spotlight
   # search" shortcut (symbolic hotkey 64; parameters are char code, keycode,
   # and Command's modifier mask). -dict-add merges this one entry, where

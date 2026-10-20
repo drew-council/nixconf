@@ -68,14 +68,12 @@ in
     "3bd68ef979a42070a44f8d82c205cfd8e8cca425d91253ec2c10a88179bb34aa"
   ];
 
-  # GUI apps from nixpkgs. nix-darwin copies every .app in these packages into
-  # /Applications/Nix Apps during activation, so Spotlight/Launchpad find them.
-  # The copies are read-only, so apps update with flake.lock, not themselves.
-  environment.systemPackages = [
-    pkgs.raycast # launcher on Command+Space; settings in home/raycast.nix
-    pkgs.zed-editor # Zed fork (overlays.nix); lands as "Zed Nightly.app", CLI is `zed`
-    pkgs.ytmdesktop # desktop app for youtube music (linux uses the same package via modules/packages/graphical.nix)
-  ];
+  # GUI apps from nixpkgs live in home.packages (home/packages/graphical.nix,
+  # home/raycast.nix), not environment.systemPackages: nix-darwin copies
+  # /Applications/Nix Apps with the store's mtime of 1, so LaunchServices
+  # keeps a stale cdhash after an update and AMFI refuses to launch the new
+  # binary (nix-darwin/nix-darwin#1842). Home Manager's copyApps doesn't
+  # preserve timestamps.
 
   # Declarative Homebrew: voxtype has no darwin build in nixpkgs, and the
   # upstream cask is the supported distribution (universal binary, quarantine
@@ -99,9 +97,9 @@ in
 
   # Login items for GUI apps. Neither nix-darwin nor Home Manager (at the
   # locked revisions) ships modules for these apps, so run them as user
-  # launchd agents instead (see loginItem above).
+  # launchd agents instead (see loginItem above). Raycast's agent lives in
+  # home/raycast.nix next to its package.
   launchd.user.agents = {
     maccy = loginItem "Maccy";
-    raycast = loginItem "Nix Apps/Raycast";
   };
 }

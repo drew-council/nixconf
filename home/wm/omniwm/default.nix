@@ -167,6 +167,10 @@ in
     }
   ];
 
+  # Without a ProcessType, launchd throttles the agent as background work
+  # (scheduling priority 20 vs 46+ for apps), so OmniWM stalls under load.
+  launchd.agents.omniwm.config.ProcessType = "Interactive";
+
   programs.omniwm = {
     enable = true;
     settings = lib.recursiveUpdate defaults overrides // {

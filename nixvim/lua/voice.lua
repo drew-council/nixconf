@@ -50,20 +50,16 @@ vim.api.nvim_create_user_command("Voice", function()
 		return
 	end
 
-	local prompt = vim.api.nvim_create_buf(false, true)
-	vim.api.nvim_buf_set_lines(prompt, 0, -1, false, { " Recording… <Enter> transcribe, <Esc> cancel " })
-	local width = vim.api.nvim_strwidth(vim.api.nvim_buf_get_lines(prompt, 0, 1, false)[1])
-	local float = vim.api.nvim_open_win(prompt, true, {
-		relative = "editor",
-		row = math.floor((vim.o.lines - 3) / 2),
-		col = math.floor((vim.o.columns - width) / 2),
-		width = width,
-		height = 1,
-		style = "minimal",
-		border = "rounded",
-		title = " voice ",
-		title_pos = "center",
-	})
+	-- While recording, <CR> transcribes and <Esc>/q cancel in the target
+	-- buffer; any buffer-local maps they shadow are restored afterwards.
+	vim.cmd.stopinsert()
+	local keys = { "<CR>", "<Esc>", "q" }
+	local saved = {}
+	for _, lhs in ipairs(keys) do
+		local map = vim.fn.maparg(lhs, "n", false, true)
+		saved[lhs] = map.buffer == 1 and map or nil
+	end
+	local group = vim.api.nvim_create_augroup("Voice", { clear = true })
 
 	local done = false
 	local function finish(stop)
@@ -71,8 +67,16 @@ vim.api.nvim_create_user_command("Voice", function()
 			return
 		end
 		done = true
-		if vim.api.nvim_win_is_valid(float) then
-			vim.api.nvim_win_close(float, true)
+		vim.api.nvim_del_augroup_by_id(group)
+		if vim.api.nvim_buf_is_valid(buf) then
+			for _, lhs in ipairs(keys) do
+				pcall(vim.keymap.del, "n", lhs, { buffer = buf })
+				if saved[lhs] then
+					vim.api.nvim_buf_call(buf, function()
+						vim.fn.mapset("n", false, saved[lhs])
+					end)
+				end
+			end
 		end
 		if not stop then
 			voxtype({ "record", "cancel" }):wait()
@@ -108,7 +112,7 @@ vim.api.nvim_create_user_command("Voice", function()
 		)
 	end
 
-	local opts = { buffer = prompt, nowait = true }
+	local opts = { buffer = buf, nowait = true }
 	vim.keymap.set("n", "<CR>", function()
 		finish(true)
 	end, opts)
@@ -118,14 +122,15 @@ vim.api.nvim_create_user_command("Voice", function()
 	vim.keymap.set("n", "q", function()
 		finish(false)
 	end, opts)
-	-- Leaving the prompt any other way must not leave the daemon recording.
-	vim.api.nvim_create_autocmd("BufLeave", {
-		buffer = prompt,
-		once = true,
+	-- Leaving the buffer must not leave the daemon recording.
+	vim.api.nvim_create_autocmd({ "BufLeave", "BufUnload" }, {
+		group = group,
+		buffer = buf,
 		callback = function()
 			finish(false)
 		end,
 	})
+	vim.notify("voice: recording… <Enter> transcribe, <Esc> cancel")
 end, { desc = "Dictate with voxtype into the current buffer" })
 
 -- `:v` is `:vglobal`, so only expand a bare `:v` (then Enter or Space).

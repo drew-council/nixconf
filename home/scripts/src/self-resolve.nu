@@ -44,7 +44,7 @@ def gh_repo_args [repo?: string] {
 
 def load_pr [pr?: string repo?: string] {
   let args = ([$pr] | compact) ++ (gh_repo_args $repo)
-  let result = (^gh pr view ...$args --json number,url,title,state,reviewDecision,latestReviews | complete)
+  let result = (^gh pr view ...$args --json number,url,title,state,latestReviews | complete)
   if $result.exit_code != 0 {
     let target = if $pr == null { "the current branch" } else { $pr }
     error make {msg: $"could not load PR for ($target): ($result.stderr | str trim)"}
@@ -59,12 +59,10 @@ def parse_pr_url [url: string] {
   | update number { into int }
 }
 
-# reviewDecision is null when the base branch does not require reviews, so fall back
-# to whether any reviewer's latest review is an approval.
+# Approved when any reviewer's latest review is an approval. reviewDecision is
+# not used: it reflects merge requirements and is empty when the base branch
+# does not require reviews, e.g. a stacked PR.
 def is_approved [pr: record] {
-  if $pr.reviewDecision? != null {
-    return ($pr.reviewDecision == "APPROVED")
-  }
   $pr.latestReviews | any {|review| $review.state == "APPROVED" }
 }
 
@@ -102,7 +100,7 @@ def main [
   }
 
   if not (is_approved $pr) {
-    let msg = $"PR #($pr.number) is not approved \(reviewDecision=($pr.reviewDecision? | default 'none')\)"
+    let msg = $"PR #($pr.number) is not approved"
     if not $force {
       print -e $"($msg); use --force to resolve anyway"
       exit 1

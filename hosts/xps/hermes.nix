@@ -10,6 +10,13 @@ let
   # Dashboard /chat uses the Ink frontend over PTY.
   hermesFrontend = upstreamHermes.hermes-frontend.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ./patches/hermes-vault-code.patch ];
+    postBuild = (old.postBuild or "") + ''
+      npm run build:ink --workspace ui-tui
+      npm run test --workspace ui-tui -- \
+        src/__tests__/vaultSaveLoginPrompt.test.tsx \
+        src/__tests__/useInputHandlers.test.ts \
+        src/__tests__/createGatewayEventHandler.test.ts
+    '';
   });
   hermes = upstreamHermes.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ./patches/hermes-nix-systemd.patch ];

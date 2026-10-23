@@ -70,7 +70,8 @@ in
         libnotify # notification library setup
         gparted # partition editor
 
-        audacity # audio editor
+        # TEMP: disabled for broken cache
+        # audacity # audio editor
         gimp # raster editor
         inkscape # vector editor
         feh # image viewer

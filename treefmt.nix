@@ -16,7 +16,7 @@
   programs.stylua.enable = true;
   programs.keep-sorted.enable = true;
   programs.ruff.enable = true;
-  programs.toml-sort = {
+  programs.taplo = {
     enable = true;
     excludes = [
       "home/programs/herdr/config.toml"

@@ -16,12 +16,7 @@
   programs.stylua.enable = true;
   programs.keep-sorted.enable = true;
   programs.ruff.enable = true;
-  programs.taplo = {
-    enable = true;
-    excludes = [
-      "home/programs/herdr/config.toml"
-    ];
-  };
+  programs.taplo.enable = true;
   programs.gofmt.enable = true;
 
   programs.topiary-nushell.enable = true;

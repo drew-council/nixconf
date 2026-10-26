@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -11,6 +10,8 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
+
+	"herdr-keybinds/internal/herdr"
 )
 
 var lazygitWatchEvents = []string{
@@ -27,16 +28,16 @@ type lazygitProcess struct {
 // watchLazygit runs one lazygit process in the active Herdr workspace root and
 // restarts it whenever Herdr focuses a workspace with a different root.
 func watchLazygit(lazygit string) error {
-	queryClient, err := newClient()
+	queryClient, err := herdr.NewClient()
 	if err != nil {
 		return fmt.Errorf("create query client: %w", err)
 	}
-	eventClient, err := newClient()
+	eventClient, err := herdr.NewClient()
 	if err != nil {
 		return fmt.Errorf("create event client: %w", err)
 	}
 
-	cwd, err := queryClient.activeLazygitCWD()
+	cwd, err := activeLazygitCWD(queryClient)
 	if err != nil {
 		return err
 	}
@@ -44,7 +45,14 @@ func watchLazygit(lazygit string) error {
 	events := make(chan struct{}, 4)
 	subscribeDone := make(chan error, 1)
 	go func() {
-		subscribeDone <- eventClient.subscribeLazygitWatchEvents(events)
+		subscribeDone <- eventClient.Subscribe(lazygitWatchEvents, func(line []byte) {
+			if lazygitWatchEventLine(line) {
+				select {
+				case events <- struct{}{}:
+				default:
+				}
+			}
+		})
 	}()
 
 	child, err := startLazygitProcess(lazygit, cwd)
@@ -103,8 +111,8 @@ func watchLazygit(lazygit string) error {
 	}
 }
 
-func restartLazygitIfCWDChanged(c *client, child *lazygitProcess, lazygit string, cwd string) (*lazygitProcess, string, error) {
-	nextCWD, err := c.activeLazygitCWD()
+func restartLazygitIfCWDChanged(c *herdr.Client, child *lazygitProcess, lazygit string, cwd string) (*lazygitProcess, string, error) {
+	nextCWD, err := activeLazygitCWD(c)
 	if err != nil || samePath(cwd, nextCWD) {
 		return child, cwd, nil
 	}
@@ -130,8 +138,9 @@ func showLazygitWatchError(cwd string, err error) {
 	fmt.Fprintln(os.Stdout, "lg-herdr-watch is still running; switch workspaces to retry.")
 }
 
-func (c *client) activeLazygitCWD() (string, error) {
-	workspace, err := c.focusedWorkspace()
+// activeLazygitCWD returns the root directory of Herdr's focused workspace.
+func activeLazygitCWD(c *herdr.Client) (string, error) {
+	workspace, err := focusedWorkspace(c)
 	if err != nil {
 		return "", fmt.Errorf("resolve active Herdr workspace: %w", err)
 	}
@@ -139,7 +148,7 @@ func (c *client) activeLazygitCWD() (string, error) {
 		return "", errors.New("could not resolve active Herdr workspace")
 	}
 
-	cwd, err := workspaceIdentityCWD(workspace.WorkspaceID)
+	cwd, err := herdr.WorkspaceIdentityCWD(workspace.WorkspaceID)
 	if err != nil {
 		return "", fmt.Errorf("resolve active Herdr workspace cwd: %w", err)
 	}
@@ -149,65 +158,19 @@ func (c *client) activeLazygitCWD() (string, error) {
 	return filepath.Clean(cwd), nil
 }
 
-func (c *client) focusedWorkspace() (workspaceInfo, error) {
-	workspaces, err := c.workspaces()
+// focusedWorkspace returns Herdr's focused workspace, or a zero value when
+// none is focused.
+func focusedWorkspace(c *herdr.Client) (herdr.Workspace, error) {
+	workspaces, err := c.Workspaces()
 	if err != nil {
-		return workspaceInfo{}, err
+		return herdr.Workspace{}, err
 	}
 	for _, workspace := range workspaces {
 		if workspace.Focused {
 			return workspace, nil
 		}
 	}
-	return workspaceInfo{}, nil
-}
-
-func (c *client) subscribeLazygitWatchEvents(events chan<- struct{}) error {
-	const method = "events.subscribe"
-	subscriptions := make([]map[string]string, 0, len(lazygitWatchEvents))
-	for _, eventName := range lazygitWatchEvents {
-		subscriptions = append(subscriptions, map[string]string{"type": eventName})
-	}
-	payload, id, err := c.encodeRequest(method, map[string]any{
-		"subscriptions": subscriptions,
-	})
-	if err != nil {
-		return err
-	}
-
-	conn, err := c.dial(method)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	if _, err := conn.Write(payload); err != nil {
-		return fmt.Errorf("write %s request: %w", method, err)
-	}
-
-	reader := bufio.NewReader(conn)
-	line, err := reader.ReadBytes('\n')
-	if err != nil {
-		return fmt.Errorf("read %s response: %w", method, err)
-	}
-	if err := decodeResponse(method, id, line, nil); err != nil {
-		return err
-	}
-
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		if lazygitWatchEventLine(scanner.Bytes()) {
-			select {
-			case events <- struct{}{}:
-			default:
-			}
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("read Herdr event stream: %w", err)
-	}
-
-	return errors.New("Herdr event stream closed")
+	return herdr.Workspace{}, nil
 }
 
 func lazygitWatchEventLine(line []byte) bool {

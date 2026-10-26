@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"herdr-keybinds/internal/herdr"
+)
 
 // Direction identifies a directional navigation target.
 type Direction uint8
@@ -21,43 +25,36 @@ type paneEdges struct {
 	Up    bool `json:"up"`
 }
 
-// context stores the active Herdr IDs needed by navigation operations.
-type context struct {
-	PaneID      string
-	TabID       string
-	WorkspaceID string
-}
-
 // navigate focuses a pane in dir, falling back to tabs or workspaces at edges.
 func (c *client) navigate(dir Direction) error {
-	ctx, err := c.resolveContext()
+	focus, err := c.CurrentFocus()
 	if err != nil {
 		return err
 	}
-	if active, err := c.isActivePopupOverlay(ctx); err != nil {
+	if active, err := c.isActivePopupOverlay(focus); err != nil {
 		return err
 	} else if active {
 		return nil
 	}
 
-	edges, err := c.paneEdges(ctx.PaneID)
+	edges, err := c.paneEdges(focus.PaneID)
 	if err != nil {
 		return err
 	}
 
 	if !edgeValue(edges, dir) {
 		params := map[string]any{"direction": dir.String()}
-		if ctx.PaneID != "" {
-			params["caller_pane_id"] = ctx.PaneID
+		if focus.PaneID != "" {
+			params["caller_pane_id"] = focus.PaneID
 		}
-		return c.call("pane.focus_direction", params, nil)
+		return c.Call("pane.focus_direction", params, nil)
 	}
 
 	switch dir {
 	case directionLeft, directionRight:
-		return c.fallbackTab(ctx, dir)
+		return c.fallbackTab(focus, dir)
 	case directionUp, directionDown:
-		return c.fallbackWorkspace(ctx, dir)
+		return c.fallbackWorkspace(focus, dir)
 	default:
 		return nil
 	}
@@ -65,19 +62,19 @@ func (c *client) navigate(dir Direction) error {
 
 // focusTabLabel focuses the first tab in the current workspace with label.
 func (c *client) focusTabLabel(label string) error {
-	ctx, err := c.resolveContext()
+	focus, err := c.CurrentFocus()
 	if err != nil {
 		return err
 	}
 
-	tabs, err := c.tabs(ctx.WorkspaceID)
+	tabs, err := c.Tabs(focus.WorkspaceID)
 	if err != nil {
 		return err
 	}
 
 	for _, tab := range tabs {
 		if tab.Label == label {
-			return c.call("tab.focus", map[string]any{"tab_id": tab.TabID}, nil)
+			return c.Call("tab.focus", map[string]any{"tab_id": tab.TabID}, nil)
 		}
 	}
 
@@ -85,13 +82,13 @@ func (c *client) focusTabLabel(label string) error {
 }
 
 // fallbackTab moves left or right by tab number when pane navigation hits an edge.
-func (c *client) fallbackTab(ctx context, dir Direction) error {
-	tabs, err := c.tabs(ctx.WorkspaceID)
+func (c *client) fallbackTab(focus herdr.Focus, dir Direction) error {
+	tabs, err := c.Tabs(focus.WorkspaceID)
 	if err != nil {
 		return err
 	}
 
-	current, ok := currentItem(tabs, ctx.TabID)
+	current, ok := currentItem(tabs, focus.TabID)
 	if !ok {
 		return nil
 	}
@@ -100,17 +97,17 @@ func (c *client) fallbackTab(ctx context, dir Direction) error {
 		return nil
 	}
 
-	return c.call("tab.focus", map[string]any{"tab_id": target.focusID()}, nil)
+	return c.Call("tab.focus", map[string]any{"tab_id": target.FocusID()}, nil)
 }
 
 // fallbackWorkspace moves up or down in the workspace sidebar order.
-func (c *client) fallbackWorkspace(ctx context, dir Direction) error {
-	workspaces, err := c.workspaces()
+func (c *client) fallbackWorkspace(focus herdr.Focus, dir Direction) error {
+	workspaces, err := c.Workspaces()
 	if err != nil {
 		return err
 	}
 
-	current, ok := currentItem(workspaces, ctx.WorkspaceID)
+	current, ok := currentItem(workspaces, focus.WorkspaceID)
 	if !ok {
 		return nil
 	}
@@ -119,36 +116,7 @@ func (c *client) fallbackWorkspace(ctx context, dir Direction) error {
 		return nil
 	}
 
-	return c.call("workspace.focus", map[string]any{"workspace_id": target.focusID()}, nil)
-}
-
-// resolveContext fills active pane, tab, and workspace IDs from env or Herdr.
-func (c *client) resolveContext() (context, error) {
-	ctx := context{
-		PaneID:      firstEnv("HERDR_PANE_ID", "HERDR_ACTIVE_PANE_ID"),
-		TabID:       firstEnv("HERDR_TAB_ID", "HERDR_ACTIVE_TAB_ID"),
-		WorkspaceID: firstEnv("HERDR_WORKSPACE_ID", "HERDR_ACTIVE_WORKSPACE_ID"),
-	}
-	if ctx.PaneID != "" && ctx.TabID != "" && ctx.WorkspaceID != "" {
-		return ctx, nil
-	}
-
-	pane, err := c.currentPaneFor(ctx.PaneID)
-	if err != nil {
-		return ctx, err
-	}
-
-	if ctx.PaneID == "" {
-		ctx.PaneID = pane.PaneID
-	}
-	if ctx.TabID == "" {
-		ctx.TabID = pane.TabID
-	}
-	if ctx.WorkspaceID == "" {
-		ctx.WorkspaceID = pane.WorkspaceID
-	}
-
-	return ctx, nil
+	return c.Call("workspace.focus", map[string]any{"workspace_id": target.FocusID()}, nil)
 }
 
 // paneEdges asks Herdr which layout edges paneID touches.
@@ -162,7 +130,7 @@ func (c *client) paneEdges(paneID string) (paneEdges, error) {
 		Edges paneEdges `json:"edges"`
 		Type  string    `json:"type"`
 	}
-	if err := c.call("pane.edges", params, &result); err != nil {
+	if err := c.Call("pane.edges", params, &result); err != nil {
 		return paneEdges{}, err
 	}
 
@@ -215,4 +183,61 @@ func (dir Direction) String() string {
 	default:
 		return "invalid"
 	}
+}
+
+// currentItem returns the focused item, falling back to a matching ID.
+func currentItem[T herdr.Focusable](items []T, id string) (T, bool) {
+	for _, item := range items {
+		if item.IsFocused() {
+			return item, true
+		}
+	}
+	for _, item := range items {
+		if id != "" && item.FocusID() == id {
+			return item, true
+		}
+	}
+	var zero T
+	return zero, false
+}
+
+// adjacentByNumber finds the closest item before or after current.
+func adjacentByNumber[T herdr.Focusable](items []T, current T, forward bool) (T, bool) {
+	var target T
+	found := false
+	for _, item := range items {
+		if forward {
+			if item.Position() > current.Position() && (!found || item.Position() < target.Position()) {
+				target = item
+				found = true
+			}
+			continue
+		}
+		if item.Position() < current.Position() && (!found || item.Position() > target.Position()) {
+			target = item
+			found = true
+		}
+	}
+	return target, found
+}
+
+// adjacentInOrder returns the neighboring item in an already ordered slice.
+func adjacentInOrder[T herdr.Focusable](items []T, current T, forward bool) (T, bool) {
+	for index, item := range items {
+		if item.FocusID() != current.FocusID() {
+			continue
+		}
+
+		targetIndex := index - 1
+		if forward {
+			targetIndex = index + 1
+		}
+		if targetIndex >= 0 && targetIndex < len(items) {
+			return items[targetIndex], true
+		}
+		break
+	}
+
+	var zero T
+	return zero, false
 }

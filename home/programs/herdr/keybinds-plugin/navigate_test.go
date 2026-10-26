@@ -1,6 +1,11 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"herdr-keybinds/internal/herdr"
+	"herdr-keybinds/internal/herdr/herdrtest"
+)
 
 func TestFallbackWorkspaceFollowsSidebarWorktreeOrder(t *testing.T) {
 	workspaceList := func() map[string]any {
@@ -31,7 +36,7 @@ func TestFallbackWorkspaceFollowsSidebarWorktreeOrder(t *testing.T) {
 		}
 	}
 
-	client, requests, stop := newTestClient(t, []testAPIResponse{
+	client, requests, stop := newTestClient(t, []herdrtest.Response{
 		{Result: workspaceList()},
 		{Result: map[string]any{"type": "workspace_focused"}},
 		{Result: workspaceList()},
@@ -52,7 +57,7 @@ func TestFallbackWorkspaceFollowsSidebarWorktreeOrder(t *testing.T) {
 	}
 	for _, move := range moves {
 		if err := client.fallbackWorkspace(
-			context{WorkspaceID: move.from},
+			herdr.Focus{WorkspaceID: move.from},
 			move.direction,
 		); err != nil {
 			t.Fatal(err)

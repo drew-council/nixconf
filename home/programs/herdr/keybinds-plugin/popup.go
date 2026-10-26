@@ -1,9 +1,12 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"sort"
+
+	"herdr-keybinds/internal/herdr"
 )
 
 // togglePopup closes the active popup, or replaces all popups of the same kind
@@ -14,7 +17,7 @@ func (c *client) togglePopup(name string) error {
 		return errors.New("popup name cannot be empty")
 	}
 
-	pane, err := c.currentPane()
+	pane, err := c.CurrentPane()
 	if err != nil {
 		return err
 	}
@@ -49,7 +52,7 @@ func (c *client) togglePopup(name string) error {
 		return saveErr
 	}
 
-	cwd, err := c.workspaceRootCWDForPane(pane)
+	cwd, err := c.WorkspaceRootCWD(pane)
 	if err != nil {
 		return fmt.Errorf("resolve workspace cwd for %s overlay: %w", name, err)
 	}
@@ -59,8 +62,8 @@ func (c *client) togglePopup(name string) error {
 
 	// Track the pane even when the post-open geometry nudge fails, so the next
 	// toggle can still close it.
-	result, openErr := c.openPluginOverlay(name, cwd)
-	openedPane := result.PluginPane.Pane
+	opened, openErr := c.openOverlay(name, cwd)
+	openedPane := opened.Pane
 	if openedPane.PaneID == "" {
 		if openErr != nil {
 			return openErr
@@ -83,11 +86,11 @@ func (c *client) togglePopup(name string) error {
 // hidden behind the overlay while the terminal changed size would otherwise
 // stay stale. Best effort: the popup is already closed at this point.
 func (c *client) refocusAfterPopupClose() error {
-	pane, err := c.currentPaneFor("")
+	pane, err := c.CurrentPaneFor("")
 	if err != nil || pane.PaneID == "" {
 		return nil
 	}
-	return c.focusPane(pane.PaneID)
+	return c.FocusPane(pane.PaneID)
 }
 
 func (c *client) popupPaneIDs(state pluginState, name string) ([]string, error) {
@@ -99,7 +102,7 @@ func (c *client) popupPaneIDs(state pluginState, name string) ([]string, error) 
 		}
 	}
 
-	panes, err := c.panes("")
+	panes, err := c.Panes("")
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +126,7 @@ func (c *client) closeTrackedPopupPanes(state pluginState, name string, paneIDs 
 		if paneID == "" {
 			continue
 		}
-		if err := c.call("plugin.pane.close", map[string]any{"pane_id": paneID}, nil); err != nil {
+		if err := c.Call("plugin.pane.close", map[string]any{"pane_id": paneID}, nil); err != nil {
 			if !isMissingPluginPane(err) && firstErr == nil {
 				firstErr = err
 			}
@@ -141,21 +144,21 @@ func removePopupPaneID(state pluginState, name, paneID string) {
 	}
 }
 
-func isPopupPane(pane paneInfo, name string) bool {
-	return firstNonEmpty(pane.Label, pane.Title) == name
+func isPopupPane(pane herdr.Pane, name string) bool {
+	return cmp.Or(pane.Label, pane.Title) == name
 }
 
 // isActivePopupOverlay prevents navigation bindings from escaping any popup.
-func (c *client) isActivePopupOverlay(ctx context) (bool, error) {
-	if ctx.PaneID == "" {
+func (c *client) isActivePopupOverlay(focus herdr.Focus) (bool, error) {
+	if focus.PaneID == "" {
 		return false, nil
 	}
-	pane, err := c.currentPane()
+	pane, err := c.CurrentPane()
 	if err != nil {
 		return false, err
 	}
 	for name := range loadPopupNames() {
-		if pane.PaneID == ctx.PaneID && isPopupPane(pane, name) {
+		if pane.PaneID == focus.PaneID && isPopupPane(pane, name) {
 			return true, nil
 		}
 	}
@@ -177,7 +180,7 @@ func loadPopupNames() map[string]struct{} {
 }
 
 func isMissingPluginPane(err error) bool {
-	var apiErr *apiCallError
+	var apiErr *herdr.APIError
 	if !errors.As(err, &apiErr) {
 		return false
 	}

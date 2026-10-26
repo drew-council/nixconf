@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	"herdr-keybinds/internal/herdr/herdrtest"
 )
 
 // Herdr 0.9.0 does not re-apply tab geometry after plugin.pane.open, so an
@@ -13,7 +15,7 @@ func TestTogglePopupFocusesOpenedOverlay(t *testing.T) {
 	t.Setenv("HERDR_PANE_ID", "")
 	t.Setenv("HERDR_ACTIVE_PANE_ID", "")
 
-	c, requests, stop := newTestClient(t, []testAPIResponse{
+	c, requests, stop := newTestClient(t, []herdrtest.Response{
 		{Result: map[string]any{
 			"type": "pane_current",
 			"pane": map[string]any{"pane_id": "w1:p1", "workspace_id": "w1"},
@@ -66,7 +68,7 @@ func TestTogglePopupRefocusesAfterClose(t *testing.T) {
 	t.Setenv("HERDR_PLUGIN_STATE_DIR", t.TempDir())
 	t.Setenv("HERDR_PANE_ID", "w1:p9")
 
-	c, requests, stop := newTestClient(t, []testAPIResponse{
+	c, requests, stop := newTestClient(t, []herdrtest.Response{
 		{Result: map[string]any{
 			"type": "pane_current",
 			"pane": map[string]any{"pane_id": "w1:p9", "workspace_id": "w1", "label": "lazygit"},

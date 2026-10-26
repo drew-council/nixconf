@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
-	stdcontext "context"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -12,9 +12,14 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"herdr-keybinds/internal/xdg"
 )
 
-const workspacePickerEntrypoint = "new-workspace-picker"
+const (
+	workspacePickerEntrypoint      = "new-workspace-picker"
+	sheerWorkspacePickerEntrypoint = "sheer-workspace-picker"
+)
 
 // workspaceRoots is a comma-separated list of workspace root directory names
 // under $HOME, overridable at build time via -ldflags -X.
@@ -28,17 +33,18 @@ type workspaceChoice struct {
 
 // openWorkspacePicker opens the workspace picker plugin pane as an overlay.
 func (c *client) openWorkspacePicker() error {
-	pane, err := c.currentPane()
-	if err != nil {
-		return err
-	}
-	_, err = c.openPluginOverlay(workspacePickerEntrypoint, activePaneCWD(pane))
-	return err
+	return c.openPickerOverlay(workspacePickerEntrypoint)
+}
+
+// openSheerWorkspacePicker opens the sheer worktree picker and creator as an
+// overlay.
+func (c *client) openSheerWorkspacePicker() error {
+	return c.openPickerOverlay(sheerWorkspacePickerEntrypoint)
 }
 
 // newWorkspacePicker runs fzf and opens or focuses the selected workspace.
 func (c *client) newWorkspacePicker(fzf string) error {
-	home, err := homeDir()
+	home, err := xdg.Home()
 	if err != nil {
 		return err
 	}
@@ -97,25 +103,22 @@ func (c *client) openOrFocusWorkspace(cwd string, label string) error {
 		return err
 	}
 	if workspaceID != "" {
-		return c.call("workspace.focus", map[string]any{"workspace_id": workspaceID}, nil)
+		return c.Call("workspace.focus", map[string]any{"workspace_id": workspaceID}, nil)
 	}
 
-	_, err = c.createWorkspace(cwd, label)
+	_, err = c.CreateWorkspace(cwd, label, true)
 	return err
 }
 
 // workspaceIDForCWD returns the workspace that already contains cwd.
 func (c *client) workspaceIDForCWD(cwd string) (string, error) {
-	var result struct {
-		Panes []paneInfo `json:"panes"`
-		Type  string     `json:"type"`
-	}
-	if err := c.call("pane.list", nil, &result); err != nil {
+	panes, err := c.Panes("")
+	if err != nil {
 		return "", err
 	}
 
 	wanted := filepath.Clean(cwd)
-	for _, pane := range result.Panes {
+	for _, pane := range panes {
 		if pane.CWD != "" && filepath.Clean(pane.CWD) == wanted {
 			return pane.WorkspaceID, nil
 		}
@@ -198,7 +201,7 @@ const zoxideRankTimeout = 750 * time.Millisecond
 // already found under $HOME. The timeout and WaitDelay guard against zoxide
 // hanging for any other reason, since a D-state child ignores SIGKILL.
 func zoxideDirectoryRanks() map[string]int {
-	ctx, cancel := stdcontext.WithTimeout(stdcontext.Background(), zoxideRankTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), zoxideRankTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "zoxide", "query", "--list", "--all")
 	cmd.WaitDelay = 100 * time.Millisecond

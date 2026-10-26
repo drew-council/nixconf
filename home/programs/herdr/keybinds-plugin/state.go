@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"herdr-keybinds/internal/xdg"
 )
 
 const stateFileName = "state.json"
@@ -81,7 +83,7 @@ func pluginStatePath() (string, error) {
 func pluginStateDir() (string, error) {
 	stateDir := os.Getenv("HERDR_PLUGIN_STATE_DIR")
 	if stateDir == "" {
-		stateHome, err := xdgBaseDir("XDG_STATE_HOME", filepath.Join(".local", "state"))
+		stateHome, err := xdg.StateHome()
 		if err != nil {
 			return "", err
 		}

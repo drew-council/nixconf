@@ -3,13 +3,16 @@ package main
 import (
 	"reflect"
 	"testing"
+
+	"herdr-keybinds/internal/herdr"
+	"herdr-keybinds/internal/herdr/herdrtest"
 )
 
 func TestOpenGhst(t *testing.T) {
 	t.Setenv("HERDR_PANE_ID", "w1:p1")
-	c, requests, stop := newTestClient(t, []testAPIResponse{
-		{Result: map[string]any{"pane": paneInfo{PaneID: "w1:p1", CWD: "/repo", ForegroundCWD: "/repo/sub"}}},
-		{Result: map[string]any{"pane": paneInfo{PaneID: "w1:p2"}}},
+	c, requests, stop := newTestClient(t, []herdrtest.Response{
+		{Result: map[string]any{"pane": herdr.Pane{PaneID: "w1:p1", CWD: "/repo", ForegroundCWD: "/repo/sub"}}},
+		{Result: map[string]any{"pane": herdr.Pane{PaneID: "w1:p2"}}},
 		{Result: map[string]any{}},
 		{Result: map[string]any{}},
 	})
@@ -18,7 +21,7 @@ func TestOpenGhst(t *testing.T) {
 	if err := c.openGhst(); err != nil {
 		t.Fatal(err)
 	}
-	want := []testAPIRequest{
+	want := []herdrtest.Request{
 		{Method: "pane.current", Params: map[string]any{"caller_pane_id": "w1:p1"}},
 		{Method: "pane.split", Params: map[string]any{
 			"target_pane_id": "w1:p1", "direction": "right", "ratio": ghstLeftPaneRatio,

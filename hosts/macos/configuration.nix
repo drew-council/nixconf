@@ -77,6 +77,11 @@ in
       # Menu bar utility that must start at login; see launchd.user.agents
       # below for the login-item wiring.
       "maccy"
+      # Tailscale client. The standalone GUI app rather than nix-darwin's
+      # services.tailscale (open-source tailscaled), which on macOS lacks
+      # exit node use, Keychain storage, and automatic DNS. The two can't
+      # coexist. Starts itself at login via its own setting.
+      "tailscale-app"
     ];
   };
 

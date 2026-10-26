@@ -3,10 +3,12 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,6 +23,7 @@ const (
 	sheerStackCatalog   = "gh-stack"
 	sheerRemoteRefsBase = "refs/remotes/origin/"
 	sheerLocalRefsBase  = "refs/heads/"
+	githubStacksPerPage = 100
 )
 
 // sheerChoiceKind separates gh stacks from branches that belong to none, so
@@ -139,6 +142,9 @@ type sheerCatalog struct {
 	choices   []sheerChoice
 	worktrees []existingWorktreeInfo
 	refs      sheerBranchRefs
+	// stale is set when GitHub or origin data came from a cache entry older
+	// than fetchCacheTTL, which only fetchStale returns without refetching.
+	stale bool
 }
 
 // visible returns the choices worth offering, omitting fully merged stacks.
@@ -190,22 +196,40 @@ func (catalog sheerCatalog) worktreeFor(branch string, choice sheerChoice) (exis
 }
 
 // loadSheerCatalog gathers worktrees, stacks, and branches for the canonical
-// sheer checkout. GitHub and origin lookups run concurrently because they
-// dominate the latency; failures there degrade to local data with a warning.
-func (c *client) loadSheerCatalog(warnings io.Writer) (sheerCatalog, error) {
+// sheer checkout. GitHub and origin lookups go through the fetch cache
+// according to mode and run concurrently because they dominate the latency;
+// failures there degrade to cached or local data with a warning.
+func (c *client) loadSheerCatalog(warnings io.Writer, mode fetchMode) (sheerCatalog, error) {
 	if sheerRepo == "" {
 		return sheerCatalog{}, errors.New("sheer repository path is not configured")
+	}
+	cache, err := newFetchCache(sheerRepo)
+	if err != nil {
+		return sheerCatalog{}, err
 	}
 
 	var (
 		wait         sync.WaitGroup
-		remoteStacks []sheerChoice
+		stackPages   []githubStackPage
+		stacksStale  bool
 		remoteErr    error
 		originHeads  map[string]bool
+		originsStale bool
 		originErr    error
 	)
-	wait.Go(func() { remoteStacks, remoteErr = remoteSheerStacks(sheerRepo) })
-	wait.Go(func() { originHeads, originErr = originBranchHeads(sheerRepo) })
+	wait.Go(func() {
+		stackPages, stacksStale, remoteErr = cachedFetch(cache, "github-stacks", mode, warnings,
+			func(previous *[]githubStackPage) ([]githubStackPage, error) {
+				if previous == nil {
+					return fetchGitHubStackPages(sheerRepo, nil)
+				}
+				return fetchGitHubStackPages(sheerRepo, *previous)
+			})
+	})
+	wait.Go(func() {
+		originHeads, originsStale, originErr = cachedFetch(cache, "origin-heads", mode, warnings,
+			func(*map[string]bool) (map[string]bool, error) { return originBranchHeads(sheerRepo) })
+	})
 
 	worktrees, err := c.sheerWorktrees()
 	if err != nil {
@@ -224,6 +248,10 @@ func (c *client) loadSheerCatalog(warnings io.Writer) (sheerCatalog, error) {
 	}
 	wait.Wait()
 
+	remoteStacks, err := parseRemoteSheerStacks(stackPages)
+	if remoteErr == nil && err != nil {
+		remoteErr = err
+	}
 	if remoteErr != nil {
 		fmt.Fprintf(warnings, "warning: listing GitHub stacks failed, showing local stacks only: %v\n", remoteErr)
 	}
@@ -237,6 +265,7 @@ func (c *client) loadSheerCatalog(warnings io.Writer) (sheerCatalog, error) {
 		choices:   buildSheerChoices(worktrees, localStacks, remoteStacks, refs),
 		worktrees: worktrees,
 		refs:      refs,
+		stale:     stacksStale || originsStale,
 	}, nil
 }
 
@@ -421,38 +450,133 @@ func parseLocalSheerStacks(data []byte) ([]sheerChoice, error) {
 	return stacks, nil
 }
 
-// remoteSheerStacks lists the repository's stacks from GitHub's Stacks REST
-// API, the same endpoint gh stack checkout uses to find remote-only stacks.
-func remoteSheerStacks(repo string) ([]sheerChoice, error) {
-	command := exec.Command("gh", "api", "--paginate", "--slurp", "repos/{owner}/{repo}/stacks?per_page=100")
+// githubStackPage is one page of the Stacks API, kept with the ETag that
+// lets a later request revalidate it.
+type githubStackPage struct {
+	ETag string          `json:"etag,omitempty"`
+	Body json.RawMessage `json:"body"`
+}
+
+// fetchGitHubStackPages lists the repository's stacks from GitHub's Stacks
+// REST API, the same endpoint gh stack checkout uses to find remote-only
+// stacks. Pages from previous are revalidated by ETag, and GitHub answers
+// unchanged ones with 304 Not Modified, which does not count against the rate
+// limit. Previously seen pages are requested concurrently; pages beyond them
+// are followed one at a time while they come back full.
+func fetchGitHubStackPages(repo string, previous []githubStackPage) ([]githubStackPage, error) {
+	cachedPage := func(index int) *githubStackPage {
+		if index < len(previous) {
+			return &previous[index]
+		}
+		return nil
+	}
+
+	pages := make([]githubStackPage, max(len(previous), 1))
+	errs := make([]error, len(pages))
+	var wait sync.WaitGroup
+	for index := range pages {
+		wait.Go(func() {
+			pages[index], errs[index] = fetchGitHubStackPage(repo, index+1, cachedPage(index))
+		})
+	}
+	wait.Wait()
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
+	}
+
+	// Stacks are listed newest first, so new stacks push older ones onto
+	// later pages, and closed ones can shorten the list.
+	for index := 0; ; index++ {
+		if index == len(pages) {
+			page, err := fetchGitHubStackPage(repo, index+1, cachedPage(index))
+			if err != nil {
+				return nil, err
+			}
+			pages = append(pages, page)
+		}
+		var stacks []json.RawMessage
+		if err := json.Unmarshal(pages[index].Body, &stacks); err != nil {
+			return nil, fmt.Errorf("parse GitHub stacks page %d: %w", index+1, err)
+		}
+		if len(stacks) < githubStacksPerPage {
+			return pages[:index+1], nil
+		}
+	}
+}
+
+// fetchGitHubStackPage requests one page of stacks, sending cached's ETag so
+// an unchanged page can be answered with 304 and reused.
+func fetchGitHubStackPage(repo string, number int, cached *githubStackPage) (githubStackPage, error) {
+	args := []string{
+		"api", "--include",
+		fmt.Sprintf("repos/{owner}/{repo}/stacks?per_page=%d&page=%d", githubStacksPerPage, number),
+	}
+	if cached != nil && cached.ETag != "" {
+		args = append(args, "--header", "If-None-Match: "+cached.ETag)
+	}
+	command := exec.Command("gh", args...)
 	command.Dir = repo
 	var stderr bytes.Buffer
 	command.Stderr = &stderr
-	output, err := command.Output()
-	if err != nil {
-		return nil, fmt.Errorf("gh api stacks: %w: %s", err, strings.TrimSpace(stderr.String()))
+	// gh exits non-zero for 304, so the status line decides the outcome.
+	output, runErr := command.Output()
+	status, etag, body, parseErr := parseIncludedResponse(output)
+	switch {
+	case parseErr == nil && status == http.StatusNotModified && cached != nil:
+		return *cached, nil
+	case parseErr == nil && status == http.StatusOK && runErr == nil:
+		return githubStackPage{ETag: etag, Body: body}, nil
 	}
-	return parseRemoteSheerStacks(output)
+	return githubStackPage{}, fmt.Errorf("gh api stacks page %d: %w: %s",
+		number, cmp.Or(runErr, parseErr, fmt.Errorf("HTTP %d", status)), strings.TrimSpace(stderr.String()))
 }
 
-// parseRemoteSheerStacks decodes slurped Stacks API pages.
-func parseRemoteSheerStacks(data []byte) ([]sheerChoice, error) {
-	var pages [][]struct {
-		Number       int `json:"number"`
-		PullRequests []struct {
-			MergedAt *string `json:"merged_at"`
-			Head     struct {
-				Ref string `json:"ref"`
-			} `json:"head"`
-		} `json:"pull_requests"`
+// parseIncludedResponse splits gh api --include output into its status code,
+// ETag header, and body.
+func parseIncludedResponse(output []byte) (int, string, []byte, error) {
+	head, body, found := bytes.Cut(output, []byte("\r\n\r\n"))
+	if !found {
+		head, body, found = bytes.Cut(output, []byte("\n\n"))
 	}
-	if err := json.Unmarshal(data, &pages); err != nil {
-		return nil, fmt.Errorf("parse GitHub stacks: %w", err)
+	if !found {
+		return 0, "", nil, errors.New("response has no header terminator")
 	}
+	lines := strings.Split(string(head), "\n")
+	status := strings.Fields(lines[0])
+	if len(status) < 2 || !strings.HasPrefix(status[0], "HTTP/") {
+		return 0, "", nil, fmt.Errorf("malformed status line %q", lines[0])
+	}
+	code, err := strconv.Atoi(status[1])
+	if err != nil {
+		return 0, "", nil, fmt.Errorf("malformed status line %q", lines[0])
+	}
+	etag := ""
+	for _, line := range lines[1:] {
+		name, value, ok := strings.Cut(strings.TrimRight(line, "\r"), ":")
+		if ok && strings.EqualFold(strings.TrimSpace(name), "etag") {
+			etag = strings.TrimSpace(value)
+		}
+	}
+	return code, etag, body, nil
+}
 
+// parseRemoteSheerStacks decodes cached Stacks API pages.
+func parseRemoteSheerStacks(pages []githubStackPage) ([]sheerChoice, error) {
 	var stacks []sheerChoice
-	for _, page := range pages {
-		for _, stack := range page {
+	for index, page := range pages {
+		var entries []struct {
+			Number       int `json:"number"`
+			PullRequests []struct {
+				MergedAt *string `json:"merged_at"`
+				Head     struct {
+					Ref string `json:"ref"`
+				} `json:"head"`
+			} `json:"pull_requests"`
+		}
+		if err := json.Unmarshal(page.Body, &entries); err != nil {
+			return nil, fmt.Errorf("parse GitHub stacks page %d: %w", index+1, err)
+		}
+		for _, stack := range entries {
 			if stack.Number <= 0 || len(stack.PullRequests) == 0 {
 				continue
 			}

@@ -1,6 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -8,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNormalizeSheerBranchName(t *testing.T) {
@@ -47,7 +54,7 @@ func TestChooseSheerBranchShowsKindsAndAcceptsSelection(t *testing.T) {
 	}
 	fzf, inputPath, argsPath := stubFzf(t, "drew/\ndrew/top\t"+choices[0].line(true)+"\n", 0)
 
-	branch, err := chooseSheerBranch(fzf, choices)
+	branch, err := chooseSheerBranch(fzf, choices, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +115,7 @@ func TestSheerChoiceLine(t *testing.T) {
 func TestChooseSheerBranchAcceptsNewTypedBranch(t *testing.T) {
 	fzf, _, _ := stubFzf(t, "drew/new-branch\ndrew/new-branch\n", 0)
 
-	branch, err := chooseSheerBranch(fzf, nil)
+	branch, err := chooseSheerBranch(fzf, nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,12 +143,12 @@ func TestSheerWorkspacePickerOpensStackWorktreeOnAnotherLayer(t *testing.T) {
 	stubSheerSources(t, sheerSources{
 		localStacks:  `{"stacks":[{"number":7,"branches":[{"branch":"drew/bottom"},{"branch":"drew/top"}]}]}`,
 		localRefs:    "refs/heads/drew/bottom\t20\nrefs/heads/drew/top\t30\n",
-		remoteStacks: `[[{"number":7,"pull_requests":[{"head":{"ref":"drew/bottom"}},{"head":{"ref":"drew/top"}}]}]]`,
+		remoteStacks: []string{`[{"number":7,"pull_requests":[{"head":{"ref":"drew/bottom"}},{"head":{"ref":"drew/top"}}]}]`},
 		originHeads:  "abc\trefs/heads/drew/bottom\nabc\trefs/heads/drew/top\n",
 	})
 	fzf, _, _ := stubFzf(t, "drew/\ndrew/top\tstack\n", 0)
 
-	if err := client.sheerWorkspacePicker(fzf); err != nil {
+	if err := client.sheerWorkspacePicker(fzf, fetchFresh); err != nil {
 		t.Fatal(err)
 	}
 	if len(*requests) != 3 {
@@ -169,6 +176,123 @@ func TestSheerWorkspacePickerOpensStackWorktreeOnAnotherLayer(t *testing.T) {
 	}
 }
 
+func TestSheerWorkspacePickerShowsStaleCacheAndReloads(t *testing.T) {
+	repo := t.TempDir()
+	useSheerRepo(t, repo)
+	client, requests, stop := newTestClient(t, []testAPIResponse{
+		sheerWorktreeListResponse(repo),
+		sheerWorktreeListResponse(repo, map[string]any{
+			"branch":             "drew/top",
+			"is_linked_worktree": true,
+			"path":               "/tmp/worktrees/sheer/drew-top",
+		}),
+		sheerMainWorkspaceListResponse(repo),
+		{Result: map[string]any{"type": "worktree_opened"}},
+	})
+	defer stop()
+
+	stubSheerSources(t, sheerSources{
+		remoteStacks: []string{`[{"number":7,"pull_requests":[{"head":{"ref":"drew/bottom"}},{"head":{"ref":"drew/top"}}]}]`},
+		originHeads:  "abc\trefs/heads/drew/bottom\nabc\trefs/heads/drew/top\n",
+	})
+	ghCalls := stubGitHubStacks(t, `[{"number":7,"pull_requests":[{"head":{"ref":"drew/bottom"}},{"head":{"ref":"drew/top"}}]}]`)
+	cache, err := newFetchCache(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-time.Hour)
+	stale := []githubStackPage{{Body: json.RawMessage(`[{"number":3,"pull_requests":[{"head":{"ref":"drew/old"}}]}]`)}}
+	if err := cache.write("github-stacks", cacheEnvelope[[]githubStackPage]{FetchedAt: old, Value: stale}); err != nil {
+		t.Fatal(err)
+	}
+	if err := cache.write("origin-heads", cacheEnvelope[map[string]bool]{FetchedAt: old, Value: map[string]bool{"drew/old": true}}); err != nil {
+		t.Fatal(err)
+	}
+	fzf, inputPath, argsPath := stubFzf(t, "drew/\ndrew/top\tstack\n", 0)
+
+	if err := client.sheerWorkspacePicker(fzf, fetchFresh); err != nil {
+		t.Fatal(err)
+	}
+
+	input, err := os.ReadFile(inputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(input), "drew/old\t") {
+		t.Fatalf("fzf input = %q, want the stale cached stack shown at once", input)
+	}
+	args, err := os.ReadFile(argsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"--with-shell=sh -c", "--bind=start:reload-sync:", " sheer-workspace list --fzf"} {
+		if !strings.Contains(string(args), want) {
+			t.Errorf("fzf args %q do not contain %q", args, want)
+		}
+	}
+	// The stub fzf never runs the reload, so the selection is resolved after
+	// revalidating the stale cache.
+	if got := ghCalls(); len(got) != 1 {
+		t.Fatalf("gh calls = %q, want one revalidation after the selection", got)
+	}
+	if open := (*requests)[3]; open.Method != "worktree.open" || open.Params["path"] != "/tmp/worktrees/sheer/drew-top" {
+		t.Fatalf("open request = %#v, want the drew/top worktree", open)
+	}
+}
+
+func TestSheerWorkspaceListUsesCacheWithinTTL(t *testing.T) {
+	repo := t.TempDir()
+	useSheerRepo(t, repo)
+	client, _, stop := newTestClient(t, []testAPIResponse{
+		sheerWorktreeListResponse(repo),
+		sheerWorktreeListResponse(repo),
+		sheerWorktreeListResponse(repo),
+	})
+	defer stop()
+
+	gitCalls := stubSheerSources(t, sheerSources{
+		remoteStacks: []string{`[{"number":7,"pull_requests":[{"head":{"ref":"drew/top"}}]}]`},
+		originHeads:  "abc\trefs/heads/drew/top\n",
+	})
+	ghCalls := stubGitHubStacks(t, `[{"number":7,"pull_requests":[{"head":{"ref":"drew/top"}}]}]`)
+
+	var first, second bytes.Buffer
+	if err := client.sheerWorkspaceList(&first, sheerListText, fetchFresh); err != nil {
+		t.Fatal(err)
+	}
+	if err := client.sheerWorkspaceList(&second, sheerListText, fetchFresh); err != nil {
+		t.Fatal(err)
+	}
+	if first.String() != second.String() || !strings.Contains(first.String(), "#7") {
+		t.Fatalf("list output changed or lacks stack #7:\n%s\n%s", first.String(), second.String())
+	}
+	countLsRemote := func() int {
+		count := 0
+		for _, call := range gitCalls() {
+			if strings.Contains(call, "ls-remote") {
+				count++
+			}
+		}
+		return count
+	}
+	if got := len(ghCalls()); got != 1 {
+		t.Fatalf("gh called %d times, want 1", got)
+	}
+	if got := countLsRemote(); got != 1 {
+		t.Fatalf("ls-remote ran %d times, want 1", got)
+	}
+
+	if err := client.sheerWorkspaceList(io.Discard, sheerListText, fetchRefresh); err != nil {
+		t.Fatal(err)
+	}
+	if got := ghCalls(); len(got) != 2 || !strings.Contains(got[1], "If-None-Match") {
+		t.Fatalf("gh calls after --refresh = %q, want a conditional request", got)
+	}
+	if got := countLsRemote(); got != 2 {
+		t.Fatalf("ls-remote ran %d times after --refresh, want 2", got)
+	}
+}
+
 func TestSheerWorkspaceBranchChecksOutRemoteOnlyStack(t *testing.T) {
 	// gh resolves the repository from its working directory, so the
 	// catalog tests need a checkout path that exists.
@@ -184,11 +308,11 @@ func TestSheerWorkspaceBranchChecksOutRemoteOnlyStack(t *testing.T) {
 	defer stop()
 
 	stubSheerSources(t, sheerSources{
-		remoteStacks: `[[{"number":7,"pull_requests":[{"head":{"ref":"drew/bottom"}},{"head":{"ref":"drew/top"}}]}]]`,
+		remoteStacks: []string{`[{"number":7,"pull_requests":[{"head":{"ref":"drew/bottom"}},{"head":{"ref":"drew/top"}}]}]`},
 		originHeads:  "abc\trefs/heads/drew/bottom\nabc\trefs/heads/drew/top\n",
 	})
 
-	if err := client.sheerWorkspaceBranch("drew/bottom"); err != nil {
+	if err := client.sheerWorkspaceBranch("drew/bottom", fetchFresh); err != nil {
 		t.Fatal(err)
 	}
 	if len(*requests) != 5 {
@@ -505,18 +629,21 @@ func useSheerRepo(t *testing.T, repo string) {
 }
 
 // sheerSources is the raw output of each source loadSheerCatalog reads.
+// remoteStacks holds one JSON array per Stacks API page.
 type sheerSources struct {
 	localStacks  string
 	localRefs    string
-	remoteStacks string
+	remoteStacks []string
 	originHeads  string
 }
 
 // stubSheerSources stubs git and gh so loadSheerCatalog reads sources: the
-// gh stack catalog file, for-each-ref, the Stacks API, and ls-remote.
+// gh stack catalog file, for-each-ref, the Stacks API, and ls-remote. It
+// also gives each test an empty fetch cache.
 func stubSheerSources(t *testing.T, sources sheerSources) func() []string {
 	t.Helper()
 
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
 	commonDir := t.TempDir()
 	if sources.localStacks != "" {
 		if err := os.WriteFile(filepath.Join(commonDir, sheerStackCatalog), []byte(sources.localStacks), 0o644); err != nil {
@@ -531,19 +658,69 @@ func stubSheerSources(t *testing.T, sources sheerSources) func() []string {
 		"*for-each-ref*) printf '%b' \"$STUB_LOCAL_REFS\" ;;\n"+
 		"*ls-remote*) printf '%b' \"$STUB_ORIGIN_HEADS\" ;;\n"+
 		"esac\n")
+	stubGitHubStacks(t, sources.remoteStacks...)
+	return gitCalls
+}
 
-	remoteStacks := sources.remoteStacks
-	if remoteStacks == "" {
-		remoteStacks = "[[]]"
+// stubGitHubStacks puts a gh on PATH that serves pages as the Stacks API
+// would through gh api --include, and returns its recorded argument lines.
+// Each page's ETag is derived from its content, and a request whose
+// If-None-Match matches it gets 304 Not Modified, exiting 1 like gh does.
+// Pages past the last are empty. The script uses only shell builtins because
+// stubGit leaves nothing else on PATH. Call it again to change the pages.
+func stubGitHubStacks(t *testing.T, pages ...string) func() []string {
+	t.Helper()
+
+	for index, page := range pages {
+		t.Setenv(fmt.Sprintf("STUB_PAGE_%d", index+1), page)
+		t.Setenv(fmt.Sprintf("STUB_ETAG_%d", index+1), testETag(page))
 	}
-	t.Setenv("STUB_REMOTE_STACKS", remoteStacks)
+	t.Setenv("STUB_PAGE_COUNT", strconv.Itoa(len(pages)))
+	ghLog := filepath.Join(t.TempDir(), "gh.log")
+	t.Setenv("GH_LOG", ghLog)
+
 	binDir := t.TempDir()
-	gh := "#!/bin/sh\nprintf '%s' \"$STUB_REMOTE_STACKS\"\n"
-	if err := os.WriteFile(filepath.Join(binDir, "gh"), []byte(gh), 0o755); err != nil {
+	script := `#!/bin/sh
+printf '%s\n' "$*" >> "$GH_LOG"
+page=
+for arg in "$@"; do
+	case "$arg" in *page=*) page=${arg##*page=} ;; esac
+done
+body='[]'
+etag='W/"empty"'
+if [ "$page" -le "$STUB_PAGE_COUNT" ]; then
+	eval "body=\$STUB_PAGE_$page"
+	eval "etag=\$STUB_ETAG_$page"
+fi
+case "$*" in *"If-None-Match: $etag"*)
+	printf 'HTTP/2.0 304 Not Modified\nEtag: %s\r\n\r\n' "$etag"
+	printf 'gh: HTTP 304\n' >&2
+	exit 1
+esac
+printf 'HTTP/2.0 200 OK\nEtag: %s\r\nX-Ratelimit-Used: 1\r\n\r\n%s' "$etag" "$body"
+`
+	if err := os.WriteFile(filepath.Join(binDir, "gh"), []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
-	return gitCalls
+
+	return func() []string {
+		t.Helper()
+		calls, err := os.ReadFile(ghLog)
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		return strings.Split(strings.TrimSuffix(string(calls), "\n"), "\n")
+	}
+}
+
+// testETag returns the weak ETag the gh stub serves for a page body.
+func testETag(page string) string {
+	sum := sha256.Sum256([]byte(page))
+	return `W/"` + hex.EncodeToString(sum[:8]) + `"`
 }
 
 func sheerWorktreeListResponse(repo string, worktrees ...map[string]any) testAPIResponse {
@@ -609,7 +786,10 @@ func stubFzf(t *testing.T, output string, status int) (string, string, string) {
 	inputPath := filepath.Join(t.TempDir(), "fzf-input")
 	argsPath := filepath.Join(t.TempDir(), "fzf-args")
 	fzf := filepath.Join(binDir, "fzf")
-	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$FZF_ARGS\"\ncat > \"$FZF_INPUT\"\nprintf '%s' \"$FZF_OUTPUT\"\nexit \"$FZF_STATUS\"\n"
+	// Only shell builtins, since stubGit can leave nothing else on PATH.
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$FZF_ARGS\"\n" +
+		"while IFS= read -r line; do printf '%s\\n' \"$line\"; done > \"$FZF_INPUT\"\n" +
+		"printf '%s' \"$FZF_OUTPUT\"\nexit \"$FZF_STATUS\"\n"
 	if err := os.WriteFile(fzf, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}

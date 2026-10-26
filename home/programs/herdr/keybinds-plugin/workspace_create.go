@@ -61,57 +61,116 @@ func (c *client) openSheerWorkspacePicker() error {
 }
 
 // sheerWorkspacePicker chooses a stack or unstacked branch, or accepts a new
-// branch name, and opens or creates its worktree workspace.
-func (c *client) sheerWorkspacePicker(fzf string) error {
+// branch name, and opens or creates its worktree workspace. Unless mode asks
+// for a refresh, cached GitHub and origin data of any age is shown at once;
+// when it is stale, fzf reloads the list from a fresh list run while the
+// picker is already open.
+func (c *client) sheerWorkspacePicker(fzf string, mode fetchMode) error {
 	fmt.Fprintln(os.Stderr, "Loading sheer stacks and branches...")
-	catalog, err := c.loadSheerCatalog(os.Stderr)
+	if mode == fetchFresh {
+		mode = fetchStale
+	}
+	catalog, err := c.loadSheerCatalog(os.Stderr, mode)
 	if err != nil {
 		return err
 	}
-	branch, err := chooseSheerBranch(fzf, catalog.visible())
+	reload := ""
+	if catalog.stale {
+		if reload, err = sheerListFzfCommand(); err != nil {
+			return err
+		}
+	}
+	branch, err := chooseSheerBranch(fzf, catalog.visible(), reload)
 	if err != nil {
 		return err
 	}
 	if branch == "" {
 		return nil
 	}
+	if catalog.stale {
+		// Resolve against current data, which the reload has usually cached
+		// by now, so a stack created since the stale fetch is still found.
+		return c.sheerWorkspaceBranch(branch, fetchFresh)
+	}
 	return c.openOrCreateSheerBranch(branch, catalog)
+}
+
+// sheerListFzfCommand returns the shell command fzf runs to reload the picker
+// with fresh choices. It reruns this binary, which inherits PATH from the
+// Nix wrapper through fzf.
+func sheerListFzfCommand() (string, error) {
+	executable, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("find herdrctl executable: %w", err)
+	}
+	return shellQuote(executable) + " sheer-workspace list --fzf", nil
+}
+
+// shellQuote quotes value as a single POSIX shell word.
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
 }
 
 // sheerWorkspaceBranch opens or creates the sheer worktree for branch without
 // prompting, so scripts and agents can drive the same workflow as alt+s.
-func (c *client) sheerWorkspaceBranch(branch string) error {
+func (c *client) sheerWorkspaceBranch(branch string, mode fetchMode) error {
 	branch = normalizeSheerBranchName(branch)
 	if branch == "" {
 		return errors.New("branch name cannot be empty")
 	}
 
-	catalog, err := c.loadSheerCatalog(os.Stderr)
+	catalog, err := c.loadSheerCatalog(os.Stderr, mode)
 	if err != nil {
 		return err
 	}
 	return c.openOrCreateSheerBranch(branch, catalog)
 }
 
-// sheerWorkspaceList prints the choices the picker offers, as aligned text or
-// as JSON, so agents can pick a --branch without opening fzf.
-func (c *client) sheerWorkspaceList(output io.Writer, asJSON bool) error {
-	catalog, err := c.loadSheerCatalog(os.Stderr)
+// sheerListFormat selects how sheerWorkspaceList prints choices.
+type sheerListFormat string
+
+const (
+	sheerListText sheerListFormat = "text"
+	sheerListJSON sheerListFormat = "json"
+	// sheerListFzf prints the picker's own input lines, for fzf reloads.
+	sheerListFzf sheerListFormat = "fzf"
+)
+
+// sheerWorkspaceList prints the choices the picker offers, so agents can pick
+// a --branch without opening fzf.
+func (c *client) sheerWorkspaceList(output io.Writer, format sheerListFormat, mode fetchMode) error {
+	catalog, err := c.loadSheerCatalog(os.Stderr, mode)
 	if err != nil {
 		return err
 	}
 	choices := catalog.visible()
-	if asJSON {
+	switch format {
+	case sheerListJSON:
 		encoder := json.NewEncoder(output)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(choices)
-	}
-	for _, choice := range choices {
-		if _, err := fmt.Fprintln(output, choice.line(false)); err != nil {
-			return err
+	case sheerListFzf:
+		_, err := io.WriteString(output, sheerFzfInput(choices))
+		return err
+	case sheerListText:
+		for _, choice := range choices {
+			if _, err := fmt.Fprintln(output, choice.line(false)); err != nil {
+				return err
+			}
 		}
+		return nil
 	}
-	return nil
+	return fmt.Errorf("unknown list format %q", format)
+}
+
+// sheerFzfInput renders choices as picker lines. Each starts with the branch
+// to open and a tab, which fzf hides from display and matching.
+func sheerFzfInput(choices []sheerChoice) string {
+	var lines strings.Builder
+	for _, choice := range choices {
+		lines.WriteString(choice.Branch + "\t" + choice.line(true) + "\n")
+	}
+	return lines.String()
 }
 
 // openOrCreateSheerBranch resolves branch to its stack or to an unstacked
@@ -187,27 +246,29 @@ func (c *client) sheerWorktrees() ([]existingWorktreeInfo, error) {
 // hidden branch name, so a selection resolves exactly like --branch. Enter
 // accepts the selected match, or the typed query when there are no matches;
 // alt-enter always takes the typed query so new names can be created even
-// when they fuzzily match existing ones. Escape cancels.
-func chooseSheerBranch(fzf string, choices []sheerChoice) (string, error) {
-	lines := make([]string, 0, len(choices))
-	for _, choice := range choices {
-		lines = append(lines, choice.Branch+"\t"+choice.line(true))
-	}
-
-	cmd := exec.Command(
-		fzf,
+// when they fuzzily match existing ones. Escape cancels. A non-empty reload
+// command replaces the list once it finishes; reload-sync keeps the current
+// list usable until then.
+func chooseSheerBranch(fzf string, choices []sheerChoice, reload string) (string, error) {
+	args := []string{
 		"--ansi",
 		"--delimiter=\t",
 		"--with-nth=2..",
 		"--tiebreak=index",
 		"--prompt=sheer> ",
 		"--header=enter: open stack/branch · alt-enter: create typed branch · ^stack / ^branch: filter kind",
-		"--query="+sheerBranchPrefix,
+		"--query=" + sheerBranchPrefix,
 		"--print-query",
 		"--bind=enter:accept-or-print-query",
 		"--bind=alt-enter:print-query",
-	)
-	cmd.Stdin = strings.NewReader(strings.Join(lines, "\n") + "\n")
+	}
+	if reload != "" {
+		// Pin the shell, since $SHELL may be nushell, which would not run a
+		// quoted path as a command.
+		args = append(args, "--with-shell=sh -c", "--bind=start:reload-sync:"+reload)
+	}
+	cmd := exec.Command(fzf, args...)
+	cmd.Stdin = strings.NewReader(sheerFzfInput(choices))
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 )
@@ -138,13 +139,13 @@ func TestParseLocalSheerStacks(t *testing.T) {
 }
 
 func TestParseRemoteSheerStacks(t *testing.T) {
-	stacks, err := parseRemoteSheerStacks([]byte(`[
-		[{"number": 30033, "pull_requests": [
+	stacks, err := parseRemoteSheerStacks([]githubStackPage{
+		{Body: json.RawMessage(`[{"number": 30033, "pull_requests": [
 			{"number": 1, "merged_at": "2026-10-01T00:00:00Z", "head": {"ref": "drew/a"}},
 			{"number": 2, "merged_at": null, "head": {"ref": "drew/b"}}
-		]}],
-		[{"number": 0, "pull_requests": [{"head": {"ref": "ignored"}}]}, {"number": 5, "pull_requests": []}]
-	]`))
+		]}]`)},
+		{Body: json.RawMessage(`[{"number": 0, "pull_requests": [{"head": {"ref": "ignored"}}]}, {"number": 5, "pull_requests": []}]`)},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

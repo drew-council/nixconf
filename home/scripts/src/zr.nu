@@ -8,6 +8,9 @@
 # seconds. --release builds `release-fast` with incremental compilation on and
 # unpacked debuginfo (skips dsymutil) for when dev feels too sluggish.
 #
+# runtime_shaders, like Zed's own nix/build.nix: the dev shell's nix Apple SDK
+# has no `metal` compiler (only Xcode ships it), so shaders compile at launch.
+#
 # Only the build runs in the dev shell; Zed itself starts from the caller's
 # directory with the caller's environment, so cargo/nix variables don't leak
 # into rust-analyzer and invalidate the build cache.
@@ -42,7 +45,7 @@ def main [
   do {
     cd $zed_dir
     with-env $profile_env {
-      ^direnv exec . cargo build --package zed --bin zed --profile $profile --jobs 8
+      ^direnv exec . cargo build --package zed --bin zed --profile $profile --features gpui_platform/runtime_shaders --jobs 8
     }
   }
 

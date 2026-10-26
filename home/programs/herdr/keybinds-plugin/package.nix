@@ -9,6 +9,9 @@
   ],
   # Main checkout used by the dedicated sheer worktree creation action.
   sheerRepo ? "",
+  # GitHub CLI used to list stacks. Pass the Home Manager configured package
+  # so it matches the gh that runs the gh stack extension in workspace panes.
+  gh ? pkgs.gh,
 }:
 
 pkgs.buildGo126Module {
@@ -37,6 +40,7 @@ pkgs.buildGo126Module {
       --prefix PATH : "${
         lib.makeBinPath [
           pkgs.fzf
+          gh
           pkgs.git
           pkgs.zoxide
         ]

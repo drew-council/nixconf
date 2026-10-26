@@ -159,7 +159,13 @@ func newSheerWorkspaceCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sheer-workspace [fzf]",
 		Short: "Open or create a sheer worktree workspace",
+		Long: "Open or create a sheer worktree workspace for a gh stack or a branch.\n\n" +
+			"A branch that belongs to a stack, locally or on GitHub, opens that stack: an\n" +
+			"existing worktree on any of its layers is focused, or a new one is created and\n" +
+			"the stack is checked out there. Other branches open or create their own worktree,\n" +
+			"and unknown names are created from origin/main as a new stack.",
 		Example: "  herdrctl sheer-workspace\n" +
+			"  herdrctl sheer-workspace list --json\n" +
 			"  herdrctl sheer-workspace --branch drew/my-feature",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -181,6 +187,27 @@ func newSheerWorkspaceCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&branch, "branch", "b", "", "full branch name to open or create, e.g. drew/my-feature")
+	cmd.AddCommand(newSheerWorkspaceListCommand())
+	return cmd
+}
+
+// newSheerWorkspaceListCommand prints the stacks and unstacked branches the
+// sheer workspace picker offers.
+func newSheerWorkspaceListCommand() *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List stacks and unstacked branches that sheer-workspace can open",
+		Long: "List open gh stacks, then branches that belong to no stack, local or on origin.\n" +
+			"Pass an entry's branch to `herdrctl sheer-workspace --branch` to open it.",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runWithClient(func(c *client) error {
+				return c.sheerWorkspaceList(cmd.OutOrStdout(), asJSON)
+			})
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "print entries as JSON")
 	return cmd
 }
 

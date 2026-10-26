@@ -29,26 +29,39 @@ func TestNormalizeSheerBranchName(t *testing.T) {
 	}
 }
 
-func TestChooseSheerBranchShowsFullBranchesAndAcceptsSelection(t *testing.T) {
-	fzf, inputPath, argsPath := stubFzf(t, "drew/\ndrew/existing\n", 0)
-	worktrees := []existingWorktreeInfo{
-		{Branch: "other/branch"},
-		{Branch: "drew/existing"},
+func TestChooseSheerBranchShowsKindsAndAcceptsSelection(t *testing.T) {
+	choices := []sheerChoice{
+		{
+			Kind:   sheerChoiceStack,
+			Branch: "drew/top",
+			Number: 7,
+			Branches: []sheerStackBranch{
+				{Name: "drew/merged", Merged: true},
+				{Name: "drew/bottom"},
+				{Name: "drew/top"},
+			},
+			Local:  true,
+			Remote: true,
+		},
+		{Kind: sheerChoiceBranch, Branch: "drew/existing", Local: true, Worktree: &existingWorktreeInfo{Branch: "drew/existing"}},
 	}
+	fzf, inputPath, argsPath := stubFzf(t, "drew/\ndrew/top\t"+choices[0].line(true)+"\n", 0)
 
-	branch, err := chooseSheerBranch(fzf, worktrees)
+	branch, err := chooseSheerBranch(fzf, choices)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if branch != "drew/existing" {
-		t.Fatalf("selected branch = %q, want drew/existing", branch)
+	if branch != "drew/top" {
+		t.Fatalf("selected branch = %q, want drew/top", branch)
 	}
 
 	input, err := os.ReadFile(inputPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := string(input), "other/branch\ndrew/existing\n"; got != want {
+	want := "drew/top\t" + choices[0].line(true) + "\n" +
+		"drew/existing\t" + choices[1].line(true) + "\n"
+	if got := string(input); got != want {
 		t.Fatalf("fzf input = %q, want %q", got, want)
 	}
 	args, err := os.ReadFile(argsPath)
@@ -56,13 +69,39 @@ func TestChooseSheerBranchShowsFullBranchesAndAcceptsSelection(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
+		"--ansi",
+		"--with-nth=2..",
 		"--query=drew/",
 		"--print-query",
 		"--bind=enter:accept-or-print-query",
+		"--bind=alt-enter:print-query",
 	} {
 		if !strings.Contains(string(args), want) {
 			t.Errorf("fzf args %q do not contain %q", args, want)
 		}
+	}
+}
+
+func TestSheerChoiceLine(t *testing.T) {
+	stack := sheerChoice{
+		Kind:   sheerChoiceStack,
+		Branch: "drew/top",
+		Number: 29891,
+		Branches: []sheerStackBranch{
+			{Name: "drew/merged", Merged: true},
+			{Name: "drew/bottom"},
+			{Name: "drew/top"},
+		},
+		Local:    true,
+		Remote:   true,
+		Worktree: &existingWorktreeInfo{Branch: "drew/bottom"},
+	}
+	if got, want := stack.line(false), "stack   #29891  local+remote  drew/bottom <- drew/top  [worktree]"; got != want {
+		t.Errorf("stack line = %q, want %q", got, want)
+	}
+	branch := sheerChoice{Kind: sheerChoiceBranch, Branch: "drew/feature", Remote: true}
+	if got, want := branch.line(false), "branch          remote        drew/feature"; got != want {
+		t.Errorf("branch line = %q, want %q", got, want)
 	}
 }
 
@@ -78,32 +117,29 @@ func TestChooseSheerBranchAcceptsNewTypedBranch(t *testing.T) {
 	}
 }
 
-func TestSheerWorkspacePickerOpensExistingWorktreeUnderMain(t *testing.T) {
+func TestSheerWorkspacePickerOpensStackWorktreeOnAnotherLayer(t *testing.T) {
+	// gh resolves the repository from its working directory, so the
+	// catalog tests need a checkout path that exists.
+	repo := t.TempDir()
+	useSheerRepo(t, repo)
 	client, requests, stop := newTestClient(t, []testAPIResponse{
-		{Result: map[string]any{
-			"type": "worktree_list",
-			"worktrees": []any{
-				map[string]any{
-					"branch":             "main",
-					"is_linked_worktree": false,
-					"path":               "/tmp/sheer",
-				},
-				map[string]any{
-					"branch":             "drew/existing",
-					"is_linked_worktree": true,
-					"path":               "/tmp/worktrees/sheer/drew-existing",
-				},
-			},
-		}},
-		sheerMainWorkspaceListResponse(),
+		sheerWorktreeListResponse(repo, map[string]any{
+			"branch":             "drew/bottom",
+			"is_linked_worktree": true,
+			"path":               "/tmp/worktrees/sheer/drew-bottom",
+		}),
+		sheerMainWorkspaceListResponse(repo),
 		{Result: map[string]any{"type": "worktree_opened"}},
 	})
 	defer stop()
 
-	oldSheerRepo := sheerRepo
-	sheerRepo = "/tmp/sheer"
-	defer func() { sheerRepo = oldSheerRepo }()
-	fzf, _, _ := stubFzf(t, "drew/\ndrew/existing\n", 0)
+	stubSheerSources(t, sheerSources{
+		localStacks:  `{"stacks":[{"number":7,"branches":[{"branch":"drew/bottom"},{"branch":"drew/top"}]}]}`,
+		localRefs:    "refs/heads/drew/bottom\t20\nrefs/heads/drew/top\t30\n",
+		remoteStacks: `[[{"number":7,"pull_requests":[{"head":{"ref":"drew/bottom"}},{"head":{"ref":"drew/top"}}]}]]`,
+		originHeads:  "abc\trefs/heads/drew/bottom\nabc\trefs/heads/drew/top\n",
+	})
+	fzf, _, _ := stubFzf(t, "drew/\ndrew/top\tstack\n", 0)
 
 	if err := client.sheerWorkspacePicker(fzf); err != nil {
 		t.Fatal(err)
@@ -111,7 +147,7 @@ func TestSheerWorkspacePickerOpensExistingWorktreeUnderMain(t *testing.T) {
 	if len(*requests) != 3 {
 		t.Fatalf("captured %d requests, want 3", len(*requests))
 	}
-	if request := (*requests)[0]; request.Method != "worktree.list" || request.Params["cwd"] != "/tmp/sheer" {
+	if request := (*requests)[0]; request.Method != "worktree.list" || request.Params["cwd"] != repo {
 		t.Fatalf("worktree list request = %#v", request)
 	}
 	if (*requests)[1].Method != "workspace.list" {
@@ -123,13 +159,48 @@ func TestSheerWorkspacePickerOpensExistingWorktreeUnderMain(t *testing.T) {
 	}
 	for key, want := range map[string]any{
 		"focus":        true,
-		"label":        "existing",
-		"path":         "/tmp/worktrees/sheer/drew-existing",
+		"label":        "bottom",
+		"path":         "/tmp/worktrees/sheer/drew-bottom",
 		"workspace_id": "w-main",
 	} {
 		if got := open.Params[key]; got != want {
 			t.Errorf("worktree.open %s = %#v, want %#v", key, got, want)
 		}
+	}
+}
+
+func TestSheerWorkspaceBranchChecksOutRemoteOnlyStack(t *testing.T) {
+	// gh resolves the repository from its working directory, so the
+	// catalog tests need a checkout path that exists.
+	repo := t.TempDir()
+	useSheerRepo(t, repo)
+	client, requests, stop := newTestClient(t, []testAPIResponse{
+		sheerWorktreeListResponse(repo),
+		sheerMainWorkspaceListResponse(repo),
+		sheerWorktreeCreatedResponse("drew/bottom"),
+		sheerPaneListResponse(),
+		{Result: map[string]any{"type": "pane_input_sent"}},
+	})
+	defer stop()
+
+	stubSheerSources(t, sheerSources{
+		remoteStacks: `[[{"number":7,"pull_requests":[{"head":{"ref":"drew/bottom"}},{"head":{"ref":"drew/top"}}]}]]`,
+		originHeads:  "abc\trefs/heads/drew/bottom\nabc\trefs/heads/drew/top\n",
+	})
+
+	if err := client.sheerWorkspaceBranch("drew/bottom"); err != nil {
+		t.Fatal(err)
+	}
+	if len(*requests) != 5 {
+		t.Fatalf("captured %d requests, want 5", len(*requests))
+	}
+	create := (*requests)[2]
+	if create.Method != "worktree.create" || create.Params["base"] != "origin/drew/bottom" {
+		t.Fatalf("create request = %#v, want worktree.create from origin/drew/bottom", create)
+	}
+	run := (*requests)[4]
+	if want := sheerSetupCommand("drew/bottom"); run.Params["text"] != want {
+		t.Fatalf("setup command = %#v, want %q", run.Params["text"], want)
 	}
 }
 
@@ -178,7 +249,7 @@ func TestEnsureSheerMainWorkspaceCreatesItOnMain(t *testing.T) {
 
 func TestCreateSheerWorktreeBranchesFromMainAndStartsSetup(t *testing.T) {
 	client, requests, stop := newTestClient(t, []testAPIResponse{
-		sheerMainWorkspaceListResponse(),
+		sheerMainWorkspaceListResponse("/tmp/sheer"),
 		{Result: map[string]any{
 			"type": "worktree_created",
 			"worktree": map[string]any{
@@ -206,17 +277,16 @@ func TestCreateSheerWorktreeBranchesFromMainAndStartsSetup(t *testing.T) {
 	sheerRepo = "/tmp/sheer"
 	defer func() { sheerRepo = oldSheerRepo }()
 
-	// Without scripting, the stub git exits 0 with empty output, so ls-remote
-	// finds no upstream branch and config --get finds no upstream tracking.
+	// Without scripting, the stub git exits 0 with empty output, so config
+	// --get reports upstream tracking that must be cleared.
 	gitCalls := stubGit(t, "")
 
-	if err := client.createSheerWorkspace("drew/feature-name", io.Discard); err != nil {
+	if err := client.createSheerWorkspace(sheerWorktreeRequest{Branch: "drew/feature-name"}, io.Discard); err != nil {
 		t.Fatal(err)
 	}
 	wantGitCalls := []string{
 		"-C /tmp/sheer check-ref-format --branch drew/feature-name",
 		"-C /tmp/sheer fetch origin main",
-		"-C /tmp/sheer ls-remote --heads origin drew/feature-name",
 		"-C /tmp/sheer config --get branch.drew/feature-name.merge",
 		"-C /tmp/sheer branch --unset-upstream drew/feature-name",
 	}
@@ -259,7 +329,7 @@ func TestCreateSheerWorktreeBranchesFromMainAndStartsSetup(t *testing.T) {
 	if run.Method != "pane.send_input" {
 		t.Fatalf("setup method = %q, want pane.send_input", run.Method)
 	}
-	wantSetup := `if ((gh stack view --json | complete).exit_code == 0) { print 'Branch already has a stack; skipping init' } else { gh stack init "drew/feature-name" }; pnpm install`
+	wantSetup := sheerSetupCommand("drew/feature-name")
 	if run.Params["pane_id"] != "w2:p1" || run.Params["text"] != wantSetup {
 		t.Fatalf("setup request = %#v, want %q in w2:p1", run.Params, wantSetup)
 	}
@@ -271,7 +341,7 @@ func TestCreateSheerWorktreeBranchesFromMainAndStartsSetup(t *testing.T) {
 
 func TestCreateSheerWorktreeSkipsUnsetForUntrackedBranch(t *testing.T) {
 	client, _, stop := newTestClient(t, []testAPIResponse{
-		sheerMainWorkspaceListResponse(),
+		sheerMainWorkspaceListResponse("/tmp/sheer"),
 		{Result: map[string]any{
 			"type": "worktree_created",
 			"worktree": map[string]any{
@@ -303,13 +373,12 @@ func TestCreateSheerWorktreeSkipsUnsetForUntrackedBranch(t *testing.T) {
 	// the state Herdr leaves behind once tracking is cleared.
 	gitCalls := stubGit(t, "case \"$*\" in *'config --get'*) exit 1 ;; esac\n")
 
-	if err := client.createSheerWorkspace("drew/feature-name", io.Discard); err != nil {
+	if err := client.createSheerWorkspace(sheerWorktreeRequest{Branch: "drew/feature-name"}, io.Discard); err != nil {
 		t.Fatal(err)
 	}
 	wantGitCalls := []string{
 		"-C /tmp/sheer check-ref-format --branch drew/feature-name",
 		"-C /tmp/sheer fetch origin main",
-		"-C /tmp/sheer ls-remote --heads origin drew/feature-name",
 		"-C /tmp/sheer config --get branch.drew/feature-name.merge",
 	}
 	if got := gitCalls(); !slices.Equal(got, wantGitCalls) {
@@ -319,7 +388,7 @@ func TestCreateSheerWorktreeSkipsUnsetForUntrackedBranch(t *testing.T) {
 
 func TestCreateSheerWorktreeReusesExistingUpstreamBranch(t *testing.T) {
 	client, requests, stop := newTestClient(t, []testAPIResponse{
-		sheerMainWorkspaceListResponse(),
+		sheerMainWorkspaceListResponse("/tmp/sheer"),
 		{Result: map[string]any{
 			"type": "worktree_created",
 			"worktree": map[string]any{
@@ -347,17 +416,17 @@ func TestCreateSheerWorktreeReusesExistingUpstreamBranch(t *testing.T) {
 	sheerRepo = "/tmp/sheer"
 	defer func() { sheerRepo = oldSheerRepo }()
 
-	// ls-remote prints a ref, so the branch already exists upstream and must be
-	// reused instead of recreated from main.
-	gitCalls := stubGit(t, "case \"$*\" in *'ls-remote'*) printf 'refs/heads/drew/feature-name\\tabc123\\n' ;; esac\n")
+	// The branch already exists upstream, so it must be reused instead of
+	// recreated from main.
+	gitCalls := stubGit(t, "")
 
-	if err := client.createSheerWorkspace("drew/feature-name", io.Discard); err != nil {
+	request := sheerWorktreeRequest{Branch: "drew/feature-name", Remote: true}
+	if err := client.createSheerWorkspace(request, io.Discard); err != nil {
 		t.Fatal(err)
 	}
 	wantGitCalls := []string{
 		"-C /tmp/sheer check-ref-format --branch drew/feature-name",
 		"-C /tmp/sheer fetch origin main",
-		"-C /tmp/sheer ls-remote --heads origin drew/feature-name",
 		"-C /tmp/sheer fetch origin drew/feature-name",
 	}
 	if got := gitCalls(); !slices.Equal(got, wantGitCalls) {
@@ -390,7 +459,131 @@ func TestCreateSheerWorktreeReusesExistingUpstreamBranch(t *testing.T) {
 	}
 }
 
-func sheerMainWorkspaceListResponse() testAPIResponse {
+func TestCreateSheerWorktreeChecksOutExistingLocalBranch(t *testing.T) {
+	client, requests, stop := newTestClient(t, []testAPIResponse{
+		sheerMainWorkspaceListResponse("/tmp/sheer"),
+		sheerWorktreeCreatedResponse("drew/feature-name"),
+		sheerPaneListResponse(),
+		{Result: map[string]any{"type": "pane_input_sent"}},
+	})
+	defer stop()
+
+	useSheerRepo(t, "/tmp/sheer")
+	gitCalls := stubGit(t, "")
+
+	request := sheerWorktreeRequest{Branch: "drew/feature-name", Local: true}
+	if err := client.createSheerWorkspace(request, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	// The local branch keeps whatever upstream it already has.
+	wantGitCalls := []string{
+		"-C /tmp/sheer check-ref-format --branch drew/feature-name",
+		"-C /tmp/sheer fetch origin main",
+	}
+	if got := gitCalls(); !slices.Equal(got, wantGitCalls) {
+		t.Fatalf("git calls = %q, want %q", got, wantGitCalls)
+	}
+	if create := (*requests)[1]; create.Params["base"] != "drew/feature-name" {
+		t.Fatalf("worktree.create base = %#v, want drew/feature-name", create.Params["base"])
+	}
+}
+
+func TestSheerSetupCommandChecksOutStackBeforeInit(t *testing.T) {
+	want := `let checkout = (gh stack checkout "drew/top" | complete); ` +
+		`if $checkout.exit_code == 2 { gh stack init "drew/top" } ` +
+		`else { print -n $checkout.stdout; print -n -e $checkout.stderr }; pnpm install`
+	if got := sheerSetupCommand("drew/top"); got != want {
+		t.Errorf("setup = %q, want %q", got, want)
+	}
+}
+
+func useSheerRepo(t *testing.T, repo string) {
+	t.Helper()
+	oldSheerRepo := sheerRepo
+	sheerRepo = repo
+	t.Cleanup(func() { sheerRepo = oldSheerRepo })
+}
+
+// sheerSources is the raw output of each source loadSheerCatalog reads.
+type sheerSources struct {
+	localStacks  string
+	localRefs    string
+	remoteStacks string
+	originHeads  string
+}
+
+// stubSheerSources stubs git and gh so loadSheerCatalog reads sources: the
+// gh stack catalog file, for-each-ref, the Stacks API, and ls-remote.
+func stubSheerSources(t *testing.T, sources sheerSources) func() []string {
+	t.Helper()
+
+	commonDir := t.TempDir()
+	if sources.localStacks != "" {
+		if err := os.WriteFile(filepath.Join(commonDir, sheerStackCatalog), []byte(sources.localStacks), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("STUB_COMMON_DIR", commonDir)
+	t.Setenv("STUB_LOCAL_REFS", sources.localRefs)
+	t.Setenv("STUB_ORIGIN_HEADS", sources.originHeads)
+	gitCalls := stubGit(t, "case \"$*\" in\n"+
+		"*rev-parse*) printf '%s\\n' \"$STUB_COMMON_DIR\" ;;\n"+
+		"*for-each-ref*) printf '%b' \"$STUB_LOCAL_REFS\" ;;\n"+
+		"*ls-remote*) printf '%b' \"$STUB_ORIGIN_HEADS\" ;;\n"+
+		"esac\n")
+
+	remoteStacks := sources.remoteStacks
+	if remoteStacks == "" {
+		remoteStacks = "[[]]"
+	}
+	t.Setenv("STUB_REMOTE_STACKS", remoteStacks)
+	binDir := t.TempDir()
+	gh := "#!/bin/sh\nprintf '%s' \"$STUB_REMOTE_STACKS\"\n"
+	if err := os.WriteFile(filepath.Join(binDir, "gh"), []byte(gh), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return gitCalls
+}
+
+func sheerWorktreeListResponse(repo string, worktrees ...map[string]any) testAPIResponse {
+	list := []any{map[string]any{
+		"branch":             "main",
+		"is_linked_worktree": false,
+		"path":               repo,
+	}}
+	for _, worktree := range worktrees {
+		list = append(list, worktree)
+	}
+	return testAPIResponse{Result: map[string]any{"type": "worktree_list", "worktrees": list}}
+}
+
+func sheerWorktreeCreatedResponse(branch string) testAPIResponse {
+	return testAPIResponse{Result: map[string]any{
+		"type": "worktree_created",
+		"worktree": map[string]any{
+			"branch":            branch,
+			"label":             sheerBranchLabel(branch),
+			"open_workspace_id": "w2",
+			"path":              "/tmp/worktrees/sheer/" + strings.ReplaceAll(branch, "/", "-"),
+		},
+	}}
+}
+
+func sheerPaneListResponse() testAPIResponse {
+	return testAPIResponse{Result: map[string]any{
+		"type": "pane_list",
+		"panes": []any{
+			map[string]any{
+				"pane_id":      "w2:p1",
+				"tab_id":       "w2:t1",
+				"workspace_id": "w2",
+			},
+		},
+	}}
+}
+
+func sheerMainWorkspaceListResponse(repo string) testAPIResponse {
 	return testAPIResponse{Result: map[string]any{
 		"type": "workspace_list",
 		"workspaces": []any{
@@ -398,11 +591,11 @@ func sheerMainWorkspaceListResponse() testAPIResponse {
 				"workspace_id": "w-main",
 				"label":        "sheer",
 				"worktree": map[string]any{
-					"checkout_path":      "/tmp/sheer",
+					"checkout_path":      repo,
 					"is_linked_worktree": false,
-					"repo_key":           "/tmp/sheer/.git",
+					"repo_key":           repo + "/.git",
 					"repo_name":          "sheer",
-					"repo_root":          "/tmp/sheer",
+					"repo_root":          repo,
 				},
 			},
 		},

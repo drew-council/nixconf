@@ -15,6 +15,7 @@ let
       (baseNameOf vars.workDir)
     ];
     sheerRepo = "${vars.workDir}/sheer";
+    gh = config.programs.gh.package;
   };
   pluginId = "drew.herdr-keybinds";
   pluginDir = "herdr/plugins/${pluginId}";
@@ -492,6 +493,17 @@ in
 
 {
   home.packages = [ keybindsPlugin ];
+
+  # The sheer workspace action reads gh stack's catalog and runs gh stack in
+  # new workspace panes, which only works when gh has the extension installed.
+  assertions = [
+    {
+      assertion =
+        config.programs.gh.enable
+        && lib.any (extension: lib.getName extension == "gh-stack") config.programs.gh.extensions;
+      message = "herdr's sheer workspace action needs programs.gh with the gh-stack extension";
+    }
+  ];
 
   xdg.configFile."herdr/config.toml".source = toml.generate "herdr-config.toml" herdrConfig;
   xdg.configFile."${pluginDir}/herdr-plugin.toml".source = manifest;

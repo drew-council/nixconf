@@ -11,8 +11,31 @@
 # encrypted database (settings_v2.db), not in com.raycast.macos defaults. Set
 # the hotkey once in Settings > General > Raycast Hotkey; use Settings >
 # Advanced > Export to back up the rest.
+let
+  app = "${config.home.homeDirectory}/${config.targets.darwin.copyApps.directory}/Raycast.app";
+in
 {
   home.packages = [ pkgs.raycast ];
+
+  # Raycast silently self-updates whenever its bundle is user-writable, and
+  # copyApps leaves it writable. The next activation copies the nixpkgs bundle
+  # back, and the older version can't open the database the newer one
+  # migrated, so it resets it. A read-only bundle dir makes the updater need a
+  # privileged helper that is never approved here, so it only offers the
+  # update in the UI. Decline it; updates come from nixpkgs.
+  home.activation.unlockRaycastBundle =
+    lib.hm.dag.entryBefore [ "checkAppManagementPermission" "copyApps" ]
+      ''
+        if [[ -d ${lib.escapeShellArg app} ]]; then
+          run /bin/chmod u+w ${lib.escapeShellArg app}
+        fi
+      '';
+  home.activation.lockRaycastBundle = lib.hm.dag.entryAfter [ "copyApps" ] ''
+    run /bin/chmod a-w ${lib.escapeShellArg app}
+  '';
+
+  # Raycast 2.9+ also honors this as an update policy; 2.7 ignores it.
+  targets.darwin.defaults."com.raycast.macos".DisableAutomaticUpdates = true;
 
   # Login item: RunAtLoad fires the agent on every login, and `open -na`
   # launches the copyApps copy (so LaunchServices sees the real bundle) and
@@ -23,7 +46,7 @@
       ProgramArguments = [
         "/usr/bin/open"
         "-na"
-        "${config.home.homeDirectory}/${config.targets.darwin.copyApps.directory}/Raycast.app"
+        app
       ];
       RunAtLoad = true;
     };

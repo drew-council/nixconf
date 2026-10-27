@@ -4,6 +4,9 @@
 # with the local API (cmd/local) on the left and `pnpm run dev` on the right,
 # both running from that workspace's checkout.
 #
+# The API talks to real Gemini on Vertex, so it needs Application Default
+# Credentials; pass --fake-gemini to use the canned fake client instead.
+#
 # By default the API runs on empty emulators. Pass --staging to copy payers
 # from staging Spanner, and name rows as TableName:ID to pull them too:
 #
@@ -40,11 +43,11 @@ def active-workspace [] {
   $workspace
 }
 
-def ensure-adc [] {
+def ensure-adc [reason: string] {
   let result = (^gcloud auth application-default print-access-token | complete)
 
   if ($result.exit_code != 0) {
-    fail "seeding from staging needs Application Default Credentials; run `gcloud auth application-default login`"
+    fail $"($reason) needs Application Default Credentials; run `gcloud auth application-default login`"
   }
 }
 
@@ -52,6 +55,7 @@ def main [
   ...test_ids: string # with --staging, rows to seed from staging as TableName:ID
   --staging # seed payers (and any named rows) from staging
   --proxies # with --staging, also seed proxies
+  --fake-gemini # use the fake Gemini client instead of real Gemini
   --focus # switch to the new tab instead of leaving it in the background
 ] {
   if ($env.HERDR_ENV? | default "") != "1" {
@@ -71,8 +75,13 @@ def main [
   let repo = $workspace.worktree.checkout_path
   let canopy = ($repo | path join projects canopy)
 
-  let api_args = if $staging {
-    ensure-adc
+  if $staging {
+    ensure-adc "seeding from staging"
+  } else if not $fake_gemini {
+    ensure-adc "real Gemini"
+  }
+
+  let seed_args = if $staging {
     (
       ["--seed_payers"]
       | append (if $proxies { ["--seed_proxies"] } else { [] })
@@ -81,6 +90,11 @@ def main [
   } else {
     []
   }
+
+  let api_args = (
+    [$"--fake-gemini-client=($fake_gemini)"]
+    | append $seed_args
+  )
 
   let api_cmd = (
     [$"bazel run --run_under \"cd ($repo) && exec\" //cmd/local --"]
@@ -127,6 +141,7 @@ def main [
   print $"tab ($tab.tab.tab_id) in workspace '($workspace.label)' \(($repo)\)"
   print $"  api    ($api_pane): ($api_cmd)"
   print $"  canopy ($canopy_pane): pnpm run dev -> http://localhost:4200"
+  print $"  gemini: (if $fake_gemini { 'fake client' } else { 'real (Vertex)' })"
   if $staging {
     print "  seeding from staging; the API is up once its pane logs 'starting service'"
   }

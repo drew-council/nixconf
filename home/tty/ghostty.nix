@@ -34,6 +34,9 @@ in
       ++ lib.optionals platform.isDarwin [
         "ctrl+shift+c=copy_to_clipboard"
         "ctrl+shift+v=paste_from_clipboard"
+        # macOS defaults map these to esc:b/esc:f, which herdr reads as alt+b/alt+f.
+        "alt+arrow_left=unbind"
+        "alt+arrow_right=unbind"
       ];
 
       copy-on-select = "clipboard";

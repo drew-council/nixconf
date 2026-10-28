@@ -67,6 +67,7 @@ let
     aria2
     yt-dlp
     xxd
+    bc # arbitrary precision calculator
     screen
     herdr # fancy terminal multiplexer
     tmux # simple terminal multiplexer

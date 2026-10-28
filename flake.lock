@@ -425,11 +425,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792774225,
-        "narHash": "sha256-wJ3NQqQQsQzVcKsWfiayjCDkKQERiFmXW8J1YdyXpVs=",
+        "lastModified": 1793219621,
+        "narHash": "sha256-vHAxNwAUdQ4QeVlIFFRv2szYWmaaty271GyGT3k6YwA=",
         "owner": "drew-council",
         "repo": "gh-stack-tui",
-        "rev": "7f27d01153b9425876ba8ebdce29d8d297bcbfe7",
+        "rev": "9f65385cdb9234cb35cb879db963462770c2c700",
         "type": "github"
       },
       "original": {

@@ -1499,11 +1499,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1793130857,
-        "narHash": "sha256-aIwjlHXeuz9D7DSZ8dULRGtFBryMTLC0P5CFH3lxqAM=",
+        "lastModified": 1793289222,
+        "narHash": "sha256-tNXVzsIOfEAsnd2PncUkKd9nMlTbc20cHdNA91mSSS8=",
         "owner": "drew-council",
         "repo": "tuicr",
-        "rev": "e16a1e68a9c4d2ea85865cd5b99e9ac5dfc76833",
+        "rev": "a68ac973d6b52c82babcc88339c3b62e7998a21b",
         "type": "github"
       },
       "original": {

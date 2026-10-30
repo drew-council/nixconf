@@ -1163,6 +1163,7 @@
         "nixvim": "nixvim",
         "opnix": "opnix",
         "systems": "systems_9",
+        "t3code": "t3code",
         "tdx": "tdx",
         "topiary-nushell": "topiary-nushell",
         "treefmt-nix": "treefmt-nix_3",
@@ -1384,6 +1385,27 @@
         "type": "path"
       },
       "parent": []
+    },
+    "t3code": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793392397,
+        "narHash": "sha256-W1m/eCmMBLJX7aNxNKTUp8KDuQk/wkiac1ywU98+xws=",
+        "owner": "drew-council",
+        "repo": "t3code",
+        "rev": "3ca62b7b7215de8012fd5852c2e006c127fc8f7e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "drew-council",
+        "ref": "drew/local-patches",
+        "repo": "t3code",
+        "type": "github"
+      }
     },
     "tdx": {
       "inputs": {

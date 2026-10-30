@@ -70,6 +70,12 @@
       inputs.treefmt-nix.follows = "treefmt-nix";
     };
 
+    # tracks the fork's patch branch; its CI keeps the pnpm deps hash current
+    t3code = {
+      url = "github:drew-council/t3code?ref=drew/local-patches";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     gchat-desktop = {
       url = "github:drew-council/gchat-desktop";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -115,6 +121,7 @@
           (import ./overlays.nix { inherit inputs; })
           # builds against this flake's nixpkgs, including its Electron
           inputs.gchat-desktop.overlays.default
+          inputs.t3code.overlays.default
         ];
       };
 

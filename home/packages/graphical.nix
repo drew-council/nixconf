@@ -11,7 +11,7 @@
     with pkgs;
     [
       gchat-desktop # electron wrapper for google chat
-      t3code # coding agent GUI; launch with `t3code-desktop`, CLI is `t3`
+      t3code # coding agent GUI from drew-council/t3code; launch with `t3code-desktop`, CLI is `t3`
     ]
     # Linux gets these from modules/packages/graphical.nix.
     ++ lib.optionals platform.isDarwin [

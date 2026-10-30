@@ -157,6 +157,9 @@ if generated.personal then
 		})
 	end)
 end
+if generated.gameMode then
+	bind_exec(mod .. " + SHIFT + G", "game-mode")
+end
 navigate(mod .. " + T", NavAction.NewTab)
 
 hl.bind(mod .. " + SUPER_L", function()

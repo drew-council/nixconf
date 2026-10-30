@@ -5,6 +5,8 @@ let
   hosts = {
     igneous = {
       defaultAudioOutputAlsaName = "USB Audio";
+      # Profile whose audio settings game mode uses.
+      gameModeProfile = "tv";
 
       monitors = {
         main = {

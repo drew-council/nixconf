@@ -41,6 +41,12 @@
     };
   };
 
+  gameMode = {
+    enable = true;
+    connector = "HDMI-A-1";
+    vkDevice = "1002:744c"; # RX 7900 XTX; the iGPU is 1002:164e
+  };
+
   # Homarr system health and resource monitoring. The web UI is disabled;
   # Homarr only needs the Glances v4 API on the LAN.
   services.glances = {

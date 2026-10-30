@@ -26,6 +26,7 @@ let
     host = osConfig.networking.hostName;
     nvidia = osConfig.nvidiaEnable;
     personal = vars.isPersonal osConfig;
+    gameMode = osConfig.gameMode.enable;
     defaults = {
       inherit (vars.defaults)
         browser
@@ -79,7 +80,10 @@ let
 
 in
 {
-  imports = [ ./monitor-switcher ];
+  imports = [
+    ./game-mode
+    ./monitor-switcher
+  ];
 
   # Distinguish automation windows from ordinary Chrome/Chromium windows.
   home.file.".agent-browser/config.json".text = builtins.toJSON {

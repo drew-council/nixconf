@@ -15,6 +15,7 @@ in
     inputs.home-manager.nixosModules.default
     ./displaymanager.nix
     ./fhs-shebangs.nix
+    ./game-mode.nix
     ./herdr-web.nix
     ./laptop.nix
     ./nvidia.nix

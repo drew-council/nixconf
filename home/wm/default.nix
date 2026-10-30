@@ -5,7 +5,7 @@
 
 {
   imports = [
-    ./waybar
+    ./quickshell
     ./hyprland
     ./hyprlock.nix
     ./kitty-hypr-nav

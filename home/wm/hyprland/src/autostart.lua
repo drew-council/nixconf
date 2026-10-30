@@ -11,7 +11,7 @@ local systemd_env = table.concat({
 
 local startup_commands = {
 	generated.commands.kwalletInit,
-	"waybar",
+	"qs -c bar",
 	"systemctl --user start hyprpolkitagent",
 	"swaync",
 	"wl-paste --type text --watch cliphist store",

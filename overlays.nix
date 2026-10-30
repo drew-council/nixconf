@@ -108,6 +108,20 @@ in
       meta.platforms = [ "x86_64-linux" ];
     };
 
+  # T3 Code has no settings for these. Terminals run nu, matching
+  # vars.defaults.shell, without changing $SHELL for its agents. Closing a
+  # terminal skips the confirmation dialog.
+  t3code = super.t3code.override {
+    t3code-unwrapped = super.t3code.unwrapped.overrideAttrs (oldAttrs: {
+      postPatch = (oldAttrs.postPatch or "") + ''
+        substituteInPlace apps/server/src/terminal/Manager.ts \
+          --replace-fail 'return env.SHELL ?? "bash";' 'return "${super.lib.getExe self.nushell}";'
+        substituteInPlace apps/web/src/lib/terminalCloseConfirm.ts \
+          --replace-fail 'if (!localApi) return true;' 'return true;'
+      '';
+    });
+  };
+
   # these claude_integration tests fail in the build sandbox
   secretspec = super.secretspec.overrideAttrs (oldAttrs: {
     checkFlags = (oldAttrs.checkFlags or [ ]) ++ [

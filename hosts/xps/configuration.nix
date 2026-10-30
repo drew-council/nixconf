@@ -23,6 +23,9 @@
     config.environment.etc."systemd/logind.conf".source
   ];
 
+  # Reachable from any tailnet client at https://xps.<tailnet>.ts.net.
+  services.t3code.enable = true;
+
   services.openssh = {
     enable = true;
     openFirewall = true;

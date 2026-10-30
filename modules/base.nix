@@ -19,6 +19,7 @@ in
     ./laptop.nix
     ./nvidia.nix
     ./remote-desktop.nix
+    ./t3code.nix
     ./windowmanager.nix
     ./packages/terminal.nix
     ./packages/graphical.nix
@@ -75,7 +76,11 @@ in
   networking.networkmanager.enable = true;
 
   # Make Tailscale available on personal machines.
-  services.tailscale.enable = lib.mkIf (vars.isPersonal config) true;
+  services.tailscale = lib.mkIf (vars.isPersonal config) {
+    enable = true;
+    # Lets user processes such as T3 Code run `tailscale serve` without root.
+    extraSetFlags = [ "--operator=${vars.user}" ];
+  };
 
   # set DNS servers on non-work machines only
   networking.nameservers = lib.mkIf (vars.isPersonal config) [

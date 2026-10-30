@@ -63,9 +63,6 @@
     ];
   };
 
-  # Temporarily keep Tailscale from starting during remote activation.
-  systemd.services.tailscaled.wantedBy = lib.mkForce [ ];
-
   services.openssh = {
     enable = true;
     openFirewall = true;

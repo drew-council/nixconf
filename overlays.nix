@@ -110,7 +110,9 @@ in
 
   # T3 Code has no settings for these. Terminals run nu, matching
   # vars.defaults.shell, without changing $SHELL for its agents. Closing a
-  # terminal skips the confirmation dialog.
+  # terminal skips the confirmation dialog. Pull request listings page by 34
+  # rather than 100: a 100-row page of sheerhealth/sheer exceeds GitHub's 10s
+  # GraphQL limit and returns 502.
   t3code = super.t3code.override {
     t3code-unwrapped = super.t3code.unwrapped.overrideAttrs (oldAttrs: {
       postPatch = (oldAttrs.postPatch or "") + ''
@@ -118,6 +120,8 @@ in
           --replace-fail 'return env.SHELL ?? "bash";' 'return "${super.lib.getExe self.nushell}";'
         substituteInPlace apps/web/src/lib/terminalCloseConfirm.ts \
           --replace-fail 'if (!localApi) return true;' 'return true;'
+        substituteInPlace packages/source-control-github/src/server/gitHubPullRequestJson.ts \
+          --replace-fail 'Math.max(Math.trunc(rows), 1), PULL_REQUEST_SEARCH_MAX_ROWS)' 'Math.max(Math.trunc(rows), 1), 34)'
       '';
     });
   };

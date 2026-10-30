@@ -192,18 +192,6 @@ in
     desktopManager.plasma6.enableQt5Integration = true;
   };
 
-  # autostart steam in background
-  systemd.user.services.steam = lib.mkIf (vars.isPersonal config) {
-    enable = true;
-    description = "Open Steam in the background at boot";
-    serviceConfig = {
-      ExecStart = "${lib.getExe config.programs.steam.package} -nochatui -nofriendsui -silent %U";
-      wantedBy = [ "graphical-session.target" ];
-      Restart = "on-failure";
-      RestartSec = "5s";
-    };
-  };
-
   # waydroid - android emulation
   virtualisation.waydroid = lib.mkIf (vars.isPersonal config) {
     enable = true;

@@ -8,7 +8,7 @@ Row {
         .filter(ws => ws.id > 0)
         .sort((a, b) => a.id - b.id)
 
-    function focus(ws) {
+    function activate(ws) {
         if (Hyprland.usingLua)
             Hyprland.dispatch(`hl.dsp.focus({ workspace = "${ws.id}", on_current_monitor = true })`);
         else
@@ -27,7 +27,7 @@ Row {
             highlighted: focused
             textColor: focused ? Theme.accent : Theme.text
             background: modelData.urgent ? Theme.red : "transparent"
-            onClicked: root.focus(modelData)
+            onClicked: root.activate(modelData)
         }
     }
 }

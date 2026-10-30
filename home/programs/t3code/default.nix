@@ -12,5 +12,8 @@ in
   home.file = {
     ".t3/userdata/settings.json".source = link "settings.json";
     ".t3/userdata/keybindings.json".source = link "keybindings.json";
+    # Published environment themes. T3 rejects symlinked theme files, so the
+    # directory is linked instead.
+    ".t3/userdata/themes".source = link "themes";
   };
 }

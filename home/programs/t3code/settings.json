@@ -64,5 +64,7 @@
         "launchArgs": "--model google-vertex/gemini-4-argon --thinking high"
       }
     }
-  }
+  },
+  "defaultTheme": "catppuccin-mocha-t3",
+  "defaultThemeSetAt": "2026-10-30T18:52:21.324Z"
 }

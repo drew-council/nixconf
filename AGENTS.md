@@ -21,8 +21,12 @@ This repository is a Nix flake for NixOS + Home Manager.
 - Shell scripting: prefer Nushell for new scripts when practical.
 
 ## Commit Guidelines
-Commits are short, imperative, and scoped (examples: `add substituters config json`, `update flake.lock`, `format`). Follow that style:
+Commits are short, imperative, and scoped (examples: `add substituters config json`, `update flake.lock`, `format`).
+Changes specific to a program use that as prefix (examples: `lazygit: fix copy keybind`, `herdr: set accent color to "mauve"`).
+
+Follow that style:
 
 - Keep subject lines concise and action-oriented.
 - Separate refactors/formatting from behavior changes when possible.
 - Link related issues/tasks and call out breaking configuration changes explicitly.
+

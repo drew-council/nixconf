@@ -141,6 +141,8 @@ let
 
     theme = {
       name = "catppuccin";
+      # Mocha mauve instead of the theme's default blue.
+      custom.accent = "#cba6f7";
     };
 
     terminal = {

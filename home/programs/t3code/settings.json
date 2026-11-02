@@ -48,11 +48,16 @@
     ]
   },
   "defaultRuntimeMode": "auto",
+  "includeInPullRequestList": false,
   "projectSettingsOverrides": {
     "c7ed4359-f05a-452d-875f-f42456367f04": {
       "defaultThreadEnvMode": "worktree",
       "branchNamingMode": "static",
-      "branchNamePrefix": "drew"
+      "branchNamePrefix": "drew",
+      "includeInPullRequestList": true
+    },
+    "3c1351c5-8207-43ea-b9ba-0f0055cdc001": {
+      "includeInPullRequestList": true
     }
   },
   "projectSettingsFolded": true,

@@ -19,6 +19,7 @@
     ./lazydocker.nix
     ./lazygit.nix
     ./nvim.nix
+    ./t3code
     ./tuicr
     ./voxtype.nix
     # keep-sorted end

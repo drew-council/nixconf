@@ -27,7 +27,7 @@ def unit-state []: nothing -> string {
 }
 
 def connector-connected [connector: string]: nothing -> bool {
-  glob $"/sys/class/drm/card*-($connector)/status"
+  glob --follow-symlinks $"/sys/class/drm/card*-($connector)/status"
   | any {|status| (open --raw $status | str trim) == "connected" }
 }
 

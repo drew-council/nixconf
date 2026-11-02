@@ -44,26 +44,43 @@ let
   session = pkgs.writeShellApplication {
     name = "game-mode-session";
     runtimeInputs = [
+      pkgs.coreutils
       pkgs.gamescope
       steam
     ];
+    # Steam reads the display's native mode from the EDID gamescope writes.
+    # Steam still caps external displays at 1080p unless Settings > Developer
+    # > "Enable Native Resolution on External Displays" is on (stored as
+    # EnableSteamNativeExternalResolution in Steam's config/config.vdf).
     text = ''
+      state="''${XDG_CONFIG_HOME:-$HOME/.config}/gamescope"
+      export GAMESCOPE_MODE_SAVE_FILE="$state/modes.cfg"
+      export GAMESCOPE_PATCHED_EDID_FILE="$state/edid.bin"
+      mkdir -p "$state"
+      touch "$GAMESCOPE_MODE_SAVE_FILE" "$GAMESCOPE_PATCHED_EDID_FILE"
+
       exec gamescope ${lib.escapeShellArgs gamescopeArgs} -- steam -gamepadui -steamos3
     '';
   };
 
-  # Runs as the session user. Steam MUST quit before gamescope so it can save
-  # state; gamescope then exits on its own when its child is gone.
+  # Runs as root: as the session user it would inherit PAMName= and fail to
+  # claim the VT the main process already holds. Steam MUST quit before
+  # gamescope so it can save state; gamescope then exits on its own when its
+  # child is gone.
   stopSession = pkgs.writeShellApplication {
     name = "game-mode-stop";
     runtimeInputs = [
       pkgs.coreutils
       pkgs.procps
+      pkgs.util-linux
       steam
     ];
     text = ''
-      if pgrep -u "$(id -u)" -x steam >/dev/null; then
-        timeout 20 steam -shutdown || true
+      if pgrep -u ${cfg.user} -x steam >/dev/null; then
+        uid=$(id -u ${cfg.user})
+        timeout 20 setpriv --reuid="$uid" --regid="$(id -g ${cfg.user})" --init-groups \
+          env HOME=${config.users.users.${cfg.user}.home} USER=${cfg.user} LOGNAME=${cfg.user} \
+          XDG_RUNTIME_DIR="/run/user/$uid" steam -shutdown || true
       fi
       for _ in $(seq 50); do
         kill -0 "''${MAINPID:-0}" 2>/dev/null || exit 0
@@ -288,7 +305,7 @@ in
         # marks it active immediately.
         ExecStartPre = "+${pkgs.kbd}/bin/chvt ${toString cfg.vt}";
         ExecStart = lib.getExe session;
-        ExecStop = lib.getExe stopSession;
+        ExecStop = "+${lib.getExe stopSession}";
         ExecStopPost = "+${lib.getExe returnVt}";
         TimeoutStopSec = 40;
         Restart = "no";

@@ -288,7 +288,33 @@
         };
 
       serverConfigs = lib.genAttrs [ "nixos-0" ] getServerConfig;
-      configs = pcConfigs // serverConfigs;
+
+      # A cloud server with the full Home Manager setup; see hosts/devbox.
+      devboxConfig = lib.nixosSystem {
+        specialArgs = {
+          inherit inputs;
+          vars = linuxVars;
+          platform = mkPlatform true;
+        };
+        modules = [
+          {
+            nixpkgs = nixpkgsSettings // {
+              hostPlatform = "x86_64-linux";
+            };
+            networking.hostName = "devbox";
+          }
+
+          ./modules/server.nix
+          # Declares gameMode, which the Hyprland Home Manager config reads.
+          ./modules/game-mode.nix
+          ./modules/t3code.nix
+          ./hosts/devbox/configuration.nix
+          inputs.home-manager.nixosModules.home-manager
+          linuxHome
+        ];
+      };
+
+      configs = pcConfigs // serverConfigs // { devbox = devboxConfig; };
 
       darwinConfig = inputs.nix-darwin.lib.darwinSystem {
         specialArgs = {

@@ -1393,11 +1393,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793582477,
-        "narHash": "sha256-t6ArKT9b7GXnstGfprX9yq8nRMAa+7uiSlO0h6JK8AA=",
+        "lastModified": 1793653680,
+        "narHash": "sha256-UTAb0JyGLqF1bMtXYiDWDL4hnvkfZ/2fPIh+ropje5c=",
         "owner": "drew-council",
         "repo": "t3code",
-        "rev": "b886506a60dca09f2d5be19ee432bf3f790dc21b",
+        "rev": "a0c56d47dbe033f309d98ab010551a49e4eb2f66",
         "type": "github"
       },
       "original": {

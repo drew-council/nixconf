@@ -87,49 +87,18 @@ in
     wheelNeedsPassword = false;
   };
 
-  # Pulls this flake's main branch daily; the box follows merged changes.
+  # Stages this flake's main branch daily for the next boot, which comes on Monday.
+  # Switching live would restart services under overnight work.
   system.autoUpgrade = {
     enable = true;
+    operation = "boot";
     flake = "github:drew-council/nixconf#devbox";
     dates = "08:50";
     randomizedDelaySec = "5min";
   };
 
-  # The Pulumi stack's startup script installs devbox (hold the box up past
-  # working hours) and devbox-reaper (power it off otherwise) from metadata.
-  systemd.services.google-startup-scripts.path = with pkgs; [
-    bash
-    coreutils
-    curl
-    gnugrep
-  ];
-  environment.systemPackages = [
-    (pkgs.writeShellScriptBin "devbox" ''exec /usr/local/bin/devbox "$@"'')
-  ];
-  systemd.tmpfiles.rules = [ "d /var/lib/devbox/hold 0777 root root -" ];
-  systemd.services.devbox-reaper = {
-    description = "Power off the dev box outside working hours unless held";
-    unitConfig.ConditionPathExists = "/usr/local/sbin/devbox-reaper";
-    path = with pkgs; [
-      bash
-      coreutils
-      curl
-      gawk
-      systemd
-      util-linux
-    ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "/usr/local/sbin/devbox-reaper";
-    };
-  };
-  systemd.timers.devbox-reaper = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "10min";
-      OnUnitActiveSec = "10min";
-    };
-  };
+  # The Pulumi stack's startup script exits on NixOS, but its shebang needs bash.
+  systemd.services.google-startup-scripts.path = [ pkgs.bash ];
 
   system.stateVersion = "26.11";
 }

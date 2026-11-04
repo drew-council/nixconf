@@ -51,6 +51,27 @@ in
     # login sessions.
     users.users.${vars.user}.linger = true;
 
+    # T3 downloads an unpatched Chrome for its browser tools. `t3 browser setup`
+    # only knows apt, so its libraries come from nix-ld.
+    programs.nix-ld.libraries = with pkgs; [
+      alsa-lib
+      at-spi2-atk
+      dbus
+      expat
+      glib
+      libgbm
+      libx11
+      libxcb
+      libxcomposite
+      libxdamage
+      libxext
+      libxfixes
+      libxkbcommon
+      libxrandr
+      nspr
+      nss
+    ];
+
     # A user unit, like `t3 service install`. The desktop app refuses to start
     # while this server owns ~/.t3.
     systemd.user.services.t3code = {

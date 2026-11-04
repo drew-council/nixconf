@@ -308,6 +308,7 @@
           # Declares gameMode, which the Hyprland Home Manager config reads.
           ./modules/game-mode.nix
           ./modules/t3code.nix
+          ./modules/disk-cleanup.nix
           ./hosts/devbox/configuration.nix
           inputs.home-manager.nixosModules.home-manager
           linuxHome

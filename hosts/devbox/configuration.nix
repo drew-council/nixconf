@@ -7,9 +7,8 @@
 }:
 
 # Cloud dev box on Google Compute Engine. The VM, its persistent /home disk, and
-# the working-hours schedule live in Sheer's Pulumi stack (stacks/devbox); this
-# is only the OS. The stack boots a small image built from this host without
-# Home Manager, then `nixos-rebuild switch` brings it up to the full config.
+# the weekday schedule live in Sheer's Pulumi stack (stacks/devbox); this is only
+# the OS.
 let
   # Survives image rebuilds, which replace the boot disk.
   persist = "/home/.devbox";

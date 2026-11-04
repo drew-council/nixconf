@@ -97,8 +97,5 @@ in
     randomizedDelaySec = "5min";
   };
 
-  # The Pulumi stack's startup script exits on NixOS, but its shebang needs bash.
-  systemd.services.google-startup-scripts.path = [ pkgs.bash ];
-
   system.stateVersion = "26.11";
 }

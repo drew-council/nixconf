@@ -43,6 +43,17 @@ in
     ];
     depends = [ "/home" ];
   };
+  # Output bases reach tens of GB per worktree, so they belong on the home disk.
+  # The bind keeps the path that .bazelrc and bazelprune use.
+  fileSystems."/var/tmp/_bazel_${vars.user}" = {
+    device = "${persist}/bazel";
+    fsType = "none";
+    options = [
+      "bind"
+      "nofail"
+    ];
+    depends = [ "/home" ];
+  };
   services.openssh.hostKeys = [
     {
       path = "${persist}/ssh/ssh_host_ed25519_key";

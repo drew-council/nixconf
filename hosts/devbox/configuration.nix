@@ -30,7 +30,30 @@ in
     options = [
       "discard"
       "nofail"
+      # A disk restored from a snapshot can be larger than its filesystem.
+      "x-systemd.growfs"
     ];
+  };
+
+  # The bind sources below must exist before their mounts, including on a home
+  # disk restored from a snapshot older than one of them.
+  systemd.services.devbox-persist-dirs = {
+    description = "Create the persistent directories on the home disk";
+    wantedBy = [ "local-fs.target" ];
+    after = [ "home.mount" ];
+    before = [
+      "var-lib-tailscale.mount"
+      "var-tmp-_bazel_${vars.user}.mount"
+    ];
+    unitConfig = {
+      DefaultDependencies = false;
+      RequiresMountsFor = "/home";
+    };
+    serviceConfig.Type = "oneshot";
+    script = ''
+      ${pkgs.coreutils}/bin/install -d -m 700 ${persist} ${persist}/ssh ${persist}/tailscale
+      ${pkgs.coreutils}/bin/install -d -o 1000 -g 100 -m 755 ${persist}/bazel
+    '';
   };
 
   # Keep the tailnet identity, so a new image is the same Tailscale node.

@@ -49,9 +49,11 @@
   },
   "defaultRuntimeMode": "auto",
   "projectSettingsOverrides": {
-    "67041662-6241-4a0e-b444-e5e4041969ed": {
+    "github.com/sheerhealth/sheer": {
       "defaultThreadEnvMode": "worktree",
+      "branchNamingMode": "static",
       "branchNamePrefix": "drew",
+      "includeInPullRequestList": true,
       "defaultProjectScripts": [
         {
           "id": "pnpm-install",
@@ -61,6 +63,9 @@
           "runOnWorktreeCreate": true
         }
       ]
+    },
+    "github.com/sheerhealth/pi-sheer": {
+      "includeInPullRequestList": true
     }
   },
   "projectSettingsFolded": true,

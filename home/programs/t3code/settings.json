@@ -48,22 +48,26 @@
     ]
   },
   "defaultRuntimeMode": "auto",
-  "includeInPullRequestList": false,
   "projectSettingsOverrides": {
-    "c7ed4359-f05a-452d-875f-f42456367f04": {
+    "67041662-6241-4a0e-b444-e5e4041969ed": {
       "defaultThreadEnvMode": "worktree",
-      "branchNamingMode": "static",
       "branchNamePrefix": "drew",
-      "includeInPullRequestList": true
-    },
-    "3c1351c5-8207-43ea-b9ba-0f0055cdc001": {
-      "includeInPullRequestList": true
+      "defaultProjectScripts": [
+        {
+          "id": "pnpm-install",
+          "name": "Install dependencies",
+          "command": "pnpm install",
+          "icon": "configure",
+          "runOnWorktreeCreate": true
+        }
+      ]
     }
   },
   "projectSettingsFolded": true,
   "idleCompaction": "onReturn",
   "defaultThreadEnvMode": "local",
   "terminalShell": "nu",
+  "includeInPullRequestList": false,
   "pullRequestMergeMethod": "squash",
   "providerInstances": {
     "codex": {
@@ -75,7 +79,8 @@
       "displayName": "Pi",
       "enabled": true,
       "config": {
-        "launchArgs": "--model google-vertex/gemini-4-argon --thinking high"
+        "launchArgs": "--model google-vertex/gemini-4-argon --thinking high",
+        "autoUsesExtensionReview": true
       }
     }
   }

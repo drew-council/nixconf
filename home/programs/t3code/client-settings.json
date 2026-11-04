@@ -4,8 +4,11 @@
   "diffColorScheme": "red-green",
   "chatWidth": "comfortable",
   "effortDisplay": "label",
-  "loadBalancingEnabled": false,
-  "loadBalancingWeights": {},
+  "loadBalancingEnabled": true,
+  "loadBalancingWeights": {
+    "cd34e0eb-a6c9-41bc-aa1e-15023e8bad36": 100,
+    "0802c36e-a894-4b61-9c81-456add7b52f6": 25
+  },
   "appearanceContrast": 100,
   "panelAnimationDurationMs": 0,
   "browserDefaultViewport": {

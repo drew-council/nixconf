@@ -182,6 +182,7 @@ in
       enableBashIntegration = false;
       settings = {
         aws.disabled = true;
+        gcloud.disabled = true;
         git_status.disabled = true;
         golang.disabled = true;
         nodejs.disabled = true;

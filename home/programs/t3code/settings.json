@@ -36,6 +36,17 @@
       "modelOrder": []
     }
   },
+  "projectScriptOverrides": {
+    "github.com/sheerhealth/sheer": [
+      {
+        "id": "pnpm-install",
+        "name": "Install dependencies",
+        "command": "pnpm install",
+        "icon": "configure",
+        "runOnWorktreeCreate": true
+      }
+    ]
+  },
   "defaultModelSelection": {
     "instanceId": "claudeAgent",
     "model": "claude-opus-5-5",
@@ -50,9 +61,6 @@
   "projectSettingsOverrides": {
     "github.com/sheerhealth/sheer": {
       "defaultThreadEnvMode": "worktree",
-      "branchNamingMode": "static",
-      "branchNamePrefix": "drew",
-      "includeInPullRequestList": true,
       "defaultProjectScripts": [
         {
           "id": "pnpm-install",
@@ -61,7 +69,10 @@
           "icon": "configure",
           "runOnWorktreeCreate": true
         }
-      ]
+      ],
+      "includeInPullRequestList": true,
+      "branchNamingMode": "static",
+      "branchNamePrefix": "drew"
     },
     "github.com/sheerhealth/pi-sheer": {
       "includeInPullRequestList": true
@@ -69,6 +80,7 @@
   },
   "projectSettingsFolded": true,
   "idleCompaction": "onReturn",
+  "linkedEnvironmentsEnabled": true,
   "defaultThreadEnvMode": "local",
   "terminalShell": "nu",
   "includeInPullRequestList": false,

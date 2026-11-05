@@ -24,9 +24,11 @@ in
   ];
   virtualisation.googleComputeImage.efi = true;
 
+  # XFS so the Bazel disk cache and output bases share blocks through reflinks.
+  # Both must stay on this filesystem. See stacks/devbox/README.md in sheer.
   fileSystems."/home" = {
-    device = "/dev/disk/by-label/home";
-    fsType = "ext4";
+    device = "/dev/disk/by-label/home-xfs";
+    fsType = "xfs";
     options = [
       "discard"
       "nofail"

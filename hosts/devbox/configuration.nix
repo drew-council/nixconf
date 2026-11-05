@@ -79,6 +79,9 @@ in
     ];
     depends = [ "/home" ];
   };
+  # The home NAS is LAN only, and this box is not on that LAN.
+  fileSystems."/mnt/tungsten-vault".enable = false;
+
   services.openssh.hostKeys = [
     {
       path = "${persist}/ssh/ssh_host_ed25519_key";

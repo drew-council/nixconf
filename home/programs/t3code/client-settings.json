@@ -23,7 +23,13 @@
   "browserSearchEngine": "duckduckgo",
   "browserCustomSearchUrl": "",
   "browserAutoShowFloatingPreview": true,
-  "browserProfiles": [],
+  "browserProfiles": [
+    {
+      "id": "profile-6a448f24-ccec-4f2f-9776-e124fb41a5ad",
+      "name": "Work",
+      "kind": "persistent"
+    }
+  ],
   "browserDefaultProfileId": "default",
   "confirmQuit": "hold",
   "confirmThreadArchive": false,

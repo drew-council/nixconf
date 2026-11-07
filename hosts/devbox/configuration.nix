@@ -98,7 +98,6 @@ in
   };
   services.t3code.enable = true;
 
-  virtualisation.docker.enable = true;
   # dhcpcd gives interfaces a 169.254.0.0/16 route, which captures the metadata server.
   # That server is also DNS and OS Login, so a running container breaks both.
   networking.dhcpcd.denyInterfaces = [ "veth*" ];

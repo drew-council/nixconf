@@ -26,14 +26,6 @@
     lumafly
   ];
 
-  services.ollama = {
-    enable = false;
-    openFirewall = true;
-    environmentVariables = {
-      OLLAMA_MODELS = "/mnt/storage/ollama";
-    };
-  };
-
   gameMode = {
     enable = true;
     connector = "HDMI-A-1";
@@ -97,9 +89,6 @@
       ];
     };
   };
-
-  # fix clock for windows dual boot
-  time.hardwareClockInLocalTime = false;
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

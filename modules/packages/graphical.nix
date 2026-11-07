@@ -50,7 +50,6 @@ in
 
         thunderbird # email
         libreoffice-qt-stable # office suite
-        # marktext # markdown wysiwyg editor
         kdePackages.okular # pdf viewer
         system-config-printer
 
@@ -83,7 +82,7 @@ in
 
         spotify
         ytmdesktop # desktop app for youtube music
-        # calibre
+        calibre
         pdfarranger
 
         # code editors
@@ -118,11 +117,7 @@ in
 
             logseq # markdown note-taking
 
-            # jellyfin-mpv-shim
-
             signal-desktop
-            # element-desktop currently pulls in the insecure jitsi-meet-1.0.8792 package causing nix evaluation failures.
-            # element-desktop
 
             apotris
             prismlauncher
@@ -167,13 +162,6 @@ in
       dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
       localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
     };
-
-    weylus = {
-      enable = false;
-      openFirewall = true;
-      users = [ vars.user ];
-    };
-
   };
 
   services = {
@@ -182,13 +170,6 @@ in
       gui.enable = true;
     };
 
-    # web ui for ollama and similar
-    open-webui = {
-      enable = false;
-      port = 31743;
-    };
-
-    desktopManager.plasma6.enableQt5Integration = true;
   };
 
   # waydroid - android emulation

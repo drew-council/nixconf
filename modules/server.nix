@@ -55,12 +55,6 @@ in
     };
   };
 
-  services.clamav = {
-    daemon.enable = false;
-    scanner.enable = false;
-    updater.enable = false;
-  };
-
   # use sudo-rs instead of default sudo
   security = {
     sudo.enable = false;

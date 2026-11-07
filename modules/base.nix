@@ -135,16 +135,6 @@ in
     ];
   };
 
-  services.clamav =
-    let
-      enabled = !(vars.isPersonal config);
-    in
-    {
-      daemon.enable = enabled;
-      scanner.enable = enabled;
-      updater.enable = enabled;
-    };
-
   hardware.bluetooth = {
     enable = true; # enables support for Bluetooth
     powerOnBoot = true; # powers up the default Bluetooth controller on boot

@@ -129,7 +129,7 @@ in
 
   wayland.windowManager.hyprland = {
     enable = true;
-    # NixOS installs the upstream compositor; Home Manager only manages its config.
+    # NixOS installs the compositor; Home Manager only manages its config.
     package = null;
     portalPackage = hyprlandPortalPackage;
     systemd.enable = false;

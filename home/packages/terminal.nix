@@ -125,7 +125,7 @@ let
     netscanner
     s-tui
     wavemon
-    nvtop-appimage
+    nvtopPackages.full
   ];
 
   aiPackages = with inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}; [

@@ -15,10 +15,15 @@
     };
 
     # secrets management through 1Password
-    opnix.url = "github:brizzbuzz/opnix";
+    opnix = {
+      url = "github:brizzbuzz/opnix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    catppuccin.url = "github:catppuccin/nix";
-    hyprland.url = "github:hyprwm/Hyprland";
+    catppuccin = {
+      url = "github:catppuccin/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
 
     zen-browser = {
@@ -40,7 +45,7 @@
     };
 
     weave = {
-      url = "github:drew-council/weave/drew-council-tweaks";
+      url = "github:ataraxy-labs/weave";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -103,7 +108,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
     };
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

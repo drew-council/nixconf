@@ -50,6 +50,7 @@
 
             sessionPath = [
               "${config.my.user.home}/.cargo/bin" # programs from `cargo install`
+              "${config.my.user.home}/go/bin" # programs from `go install`
             ];
           };
 

@@ -1,11 +1,11 @@
+let
+  defaults = import ./_defaults.nix;
+in
 {
   flake.modules.homeManager.desktop =
     { lib, pkgs, ... }:
     let
       inherit (pkgs.stdenv.hostPlatform) isDarwin isLinux;
-      fontFamily = "JetBrainsMono Nerd Font";
-      fontSize = 12;
-      backgroundOpacity = if isDarwin then 1.0 else 0.9;
     in
     {
       programs.ghostty = {
@@ -14,9 +14,9 @@
           # GUI-launched Ghostty on macOS does not inherit the Nix profile PATH.
           command = if isDarwin then lib.getExe pkgs.nushell else "nu";
 
-          font-family = fontFamily;
-          font-size = fontSize;
-          background-opacity = backgroundOpacity;
+          font-family = defaults.fontFamily;
+          font-size = defaults.fontSize;
+          background-opacity = if isDarwin then 1.0 else defaults.backgroundOpacity;
           cursor-style = "bar";
           cursor-style-blink = false;
           adjust-cursor-thickness = 2;
@@ -25,8 +25,8 @@
             "ctrl+enter=unbind"
             "ctrl+shift+enter=unbind"
           ]
-          # Linux-style clipboard keys; Karabiner leaves terminals alone (see
-          # modules/desktop-macos/karabiner), so Ctrl+C still reaches the shell.
+          # Linux-style clipboard keys; Karabiner leaves terminals alone, so
+          # Ctrl+C still reaches the shell.
           ++ lib.optionals isDarwin [
             "ctrl+shift+c=copy_to_clipboard"
             "ctrl+shift+v=paste_from_clipboard"

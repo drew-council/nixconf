@@ -1,67 +1,15 @@
+let
+  defaults = import ./_defaults.nix;
+in
 {
   flake.modules.homeManager.desktop-linux =
     { lib, pkgs, ... }:
-    let
-      fontFamily = "JetBrainsMono Nerd Font";
-      fontSize = 12;
-      backgroundOpacity = 0.9;
-      scrollback = 10000;
-    in
     {
-      programs.alacritty = {
-        enable = true;
-        settings = {
-          window = {
-            opacity = backgroundOpacity;
-
-            padding = {
-              x = 10;
-              y = 10;
-            };
-            dynamic_padding = true;
-          };
-
-          scrolling.history = 10000;
-
-          selection.save_to_clipboard = true;
-
-          terminal.shell.program = "nu";
-
-          cursor = {
-            style = {
-              shape = "Beam";
-              blinking = "Off";
-            };
-            unfocused_hollow = true;
-          };
-
-          font = {
-            normal = {
-              family = fontFamily;
-              style = "Regular";
-            };
-            bold = {
-              family = fontFamily;
-              style = "Bold";
-            };
-            italic = {
-              family = fontFamily;
-              style = "Italic";
-            };
-            bold_italic = {
-              family = fontFamily;
-              style = "Bold Italic";
-            };
-            size = fontSize;
-          };
-        };
-      };
-
       programs.kitty = {
         enable = true;
         font = {
-          name = fontFamily;
-          size = fontSize;
+          name = defaults.fontFamily;
+          size = defaults.fontSize;
         };
         shellIntegration = {
           enableBashIntegration = false;
@@ -78,10 +26,10 @@
           cursor_shape = "beam";
           cursor_blink_interval = 0;
 
-          background_opacity = backgroundOpacity;
+          background_opacity = defaults.backgroundOpacity;
           enable_audio_bell = false;
 
-          scrollback_lines = scrollback;
+          scrollback_lines = defaults.scrollback;
           scrollback_fill_enlarged_window = true;
           focus_follows_mouse = true;
 

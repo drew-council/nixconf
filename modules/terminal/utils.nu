@@ -138,7 +138,14 @@ def fzf-list [] {
 }
 
 def df-fancy [] {
-  df -h -P | detect columns --guess | where "Filesystem" != "tmpfs" | update "Size" {|| into filesize } | update "Used" {|| into filesize } | update "Avail" {|| into filesize }
+  (
+    df -h -P
+    | detect columns --guess
+    | where "Filesystem" != "tmpfs"
+    | update "Size" {|| into filesize }
+    | update "Used" {|| into filesize }
+    | update "Avail" {|| into filesize }
+  )
 }
 
 def fopen [search: string] {
@@ -146,4 +153,12 @@ def fopen [search: string] {
   if ($file | is-not-empty) {
     nvim $file
   }
+}
+
+def git-commits [] {
+  (
+    git log '--pretty=format:%h%x1f%an%x1f%s'
+    | lines
+    | split column (char unit_separator) commit author message
+  )
 }

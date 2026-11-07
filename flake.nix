@@ -267,28 +267,6 @@
 
       pcConfigs = lib.genAttrs buildConfig.hosts getPcConfig;
 
-      getServerConfig =
-        hostname:
-        lib.nixosSystem {
-          specialArgs = {
-            inherit inputs;
-            vars = linuxVars;
-          };
-          modules = [
-            {
-              nixpkgs = nixpkgsSettings // {
-                hostPlatform = "x86_64-linux";
-              };
-              networking.hostName = hostname;
-            }
-
-            ./modules/server.nix
-            ./hosts/${hostname}/configuration.nix
-          ];
-        };
-
-      serverConfigs = lib.genAttrs [ "nixos-0" ] getServerConfig;
-
       # A cloud server with the full Home Manager setup; see hosts/devbox.
       devboxConfig = lib.nixosSystem {
         specialArgs = {
@@ -315,7 +293,9 @@
         ];
       };
 
-      configs = pcConfigs // serverConfigs // { devbox = devboxConfig; };
+      configs = pcConfigs // {
+        devbox = devboxConfig;
+      };
 
       darwinConfig = inputs.nix-darwin.lib.darwinSystem {
         specialArgs = {

@@ -14,23 +14,24 @@
       };
 
       environment.systemPackages = with pkgs; [
-        hyprpicker
-        hyprshot
-        hyprpaper
+        hyprpicker # color picker
+        hyprshot # screenshots
+        hyprpaper # wallpaper daemon
 
-        playerctl
-        brightnessctl
-        udiskie
-        networkmanagerapplet
-        blueman
-        pavucontrol
-        swaynotificationcenter
-        hyprpolkitagent
-        wl-clipboard
-        wtype
-        bemoji
-        wev
-        cliphist
+        playerctl # media key control
+        brightnessctl # backlight control
+        udiskie # removable drive automounter
+        networkmanagerapplet # network tray applet
+        blueman # bluetooth manager
+        pavucontrol # audio mixer
+        swaynotificationcenter # notification center
+        libnotify # send desktop notifications
+        hyprpolkitagent # polkit authentication prompts
+        wl-clipboard # clipboard CLI
+        wtype # simulate keyboard input
+        bemoji # emoji picker
+        wev # show input events
+        cliphist # clipboard history
       ];
     };
 

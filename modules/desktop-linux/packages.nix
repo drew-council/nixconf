@@ -1,12 +1,7 @@
-{ inputs, ... }:
 {
   flake.modules.nixos.desktop-linux =
-    { lib, pkgs, ... }:
+    { pkgs, ... }:
     let
-      icat = pkgs.writeShellScriptBin "icat" ''
-        exec ${lib.getExe pkgs.kitty} +kitten icat "$@"
-      '';
-
       # nixpkgs exposes Zed as `zeditor`; add the expected `zed` binary to PATH.
       zed = pkgs.symlinkJoin {
         name = "zed";
@@ -21,21 +16,11 @@
     in
     {
       environment.systemPackages = with pkgs; [
-        # file managers
-        kdePackages.dolphin
-        lxqt.pcmanfm-qt
+        lxqt.pcmanfm-qt # lightweight file manager
 
         thunderbird # email
         libreoffice-qt-stable # office suite
         kdePackages.okular # pdf viewer
-        system-config-printer
-
-        # browsers
-        inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
-        inputs.helium-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
-        google-chrome
-        agent-browser # browser automation CLI for AI agents
-        # firefox in home manager
 
         qalculate-qt # calculator
 
@@ -43,58 +28,46 @@
         localsend # local file sharing between devices
         wireshark # packet monitoring
 
-        libnotify # notification library setup
         gparted # partition editor
 
         audacity # audio editor
         gimp # raster editor
         inkscape # vector editor
-        feh # image viewer
         ksnip # image annotation
         prusa-slicer # slicer for 3D printing
 
-        vlc
+        vlc # media player
         mpv # preferred media playback
-        kdePackages.kdenlive
+        kdePackages.kdenlive # video editor
 
-        spotify
+        spotify # music streaming
         ytmdesktop # desktop app for youtube music
-        calibre
-        pdfarranger
+        calibre # ebook library manager
+        pdfarranger # merge and rearrange pdf pages
 
         # code editors
         zed-editor # preferred code editor
         zed # alias
-        vscodium
+        vscodium # vscode without telemetry
 
-        alacritty
-        ghostty
-        kitty
-        icat
-
-        kdePackages.qtwayland
-        kdePackages.qtsvg
-        kdePackages.qt6ct
-        kdePackages.kio-fuse
-        kdePackages.kio-extras
-        kdePackages.plasma-workspace
-        kdePackages.kconfig
+        kdePackages.qtwayland # Qt Wayland platform plugin
+        kdePackages.qtsvg # Qt SVG support
+        kdePackages.qt6ct # Qt 6 theme settings
+        kdePackages.kio-fuse # exposes KIO locations to non-KDE apps
+        kdePackages.kio-extras # extra KIO protocols and thumbnails
+        kdePackages.plasma-workspace # Plasma libraries and menu definitions
+        kdePackages.kconfig # KDE configuration tools
 
         libva-utils # utilities to check vaapi stuff
         vulkan-tools # tools for testing vulkan
         mesa-demos # graphics demos for testing GPU
         pulseaudio # utilities for pulseaudio control, works against wireplumber emulated pulseaudio
 
-        qbittorrent
+        qbittorrent # torrent client
 
         logseq # markdown note-taking
 
-        signal-desktop
+        signal-desktop # signal messenger
       ];
-
-      # fix dolphin default programs
-      # https://discourse.nixos.org/t/dolphin-does-not-have-mime-associations/48985/8
-      environment.etc."/xdg/menus/applications.menu".text =
-        builtins.readFile "${pkgs.kdePackages.plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
     };
 }

@@ -1,7 +1,31 @@
+{ inputs, ... }:
 {
+  flake.modules.nixos.desktop-linux =
+    { pkgs, ... }:
+    let
+      inherit (pkgs.stdenv.hostPlatform) system;
+    in
+    {
+      environment.systemPackages = with pkgs; [
+        inputs.zen-browser.packages.${system}.default # preferred browser
+        inputs.helium-browser.packages.${system}.default # privacy-focused chromium fork
+        google-chrome
+        agent-browser # browser automation CLI for AI agents
+      ];
+
+      security.chromiumSuidSandbox.enable = true;
+    };
+
   flake.modules.homeManager.desktop-linux =
     { config, ... }:
     {
+      programs.chromium = {
+        enable = true;
+        commandLineArgs = [
+          "--remote-debugging-port=9222"
+        ];
+      };
+
       programs.firefox = {
         enable = true;
         configPath = "${config.xdg.configHome}/mozilla/firefox";

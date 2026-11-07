@@ -63,9 +63,6 @@
         enable32Bit = true;
       };
 
-      # waydroid - android emulation
-      virtualisation.waydroid.enable = true;
-
       services.mullvad-vpn = {
         enable = true;
         gui.enable = true;

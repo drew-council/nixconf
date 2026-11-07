@@ -99,7 +99,7 @@ in
         imports = [
           ./_hardware.nix
           ./_agent-artifacts-proxy.nix
-          ./_silksong.nix
+          ./_archipelago
         ];
 
         boot = {

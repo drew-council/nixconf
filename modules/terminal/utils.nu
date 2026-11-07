@@ -147,19 +147,3 @@ def fopen [search: string] {
     nvim $file
   }
 }
-
-# Compress a directory as a tarball using zst compression
-def "tarzst compress" [directory: string] {
-  use std/assert
-  assert equal ($directory | path type) "dir" "Directiory to compress is not a directory!"
-  let basename = ($directory | path basename | $in + ".tar.zst")
-  tar -I zstd -cf $basename $directory
-}
-
-# Decompress a zst compressed tarball
-def "tarzst decompress" [file: string] {
-  use std/assert
-  assert equal ($file | path type) "file" "Path to decompress is not a file!"
-  assert ($file | str ends-with ".tar.zst") "File is not a zst compressed tarball!"
-  tar -I zstd -xf $file
-}

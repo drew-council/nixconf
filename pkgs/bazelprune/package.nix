@@ -1,6 +1,5 @@
 # Bazel writes the workspace path into DO_NOT_BUILD_HERE in every output base,
-# and each worktree gets its own output base (see modules/work/bazel.nix), so
-# deleting a worktree strands an output base of several GiB. Nothing else ever
+# and each worktree gets its own output base, so deleting a worktree strands an output base of several GiB. Nothing else ever
 # reclaims them: 20 stranded bases once filled ~150 GiB. Bazel never shrinks a
 # live worktree's base either: one that has run the Go tests holds ~25 GiB of
 # go_test binaries (one per _test.go file) indefinitely. This walks the

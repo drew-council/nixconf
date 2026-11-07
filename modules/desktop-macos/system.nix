@@ -38,8 +38,8 @@
       # Determinate owns the Nix daemon and its settings.
       nix.enable = false;
 
-      # GUI apps from nixpkgs live in home.packages (modules/desktop/packages.nix,
-      # raycast.nix), not environment.systemPackages: nix-darwin copies
+      # GUI apps from nixpkgs live in home.packages, not
+      # environment.systemPackages: nix-darwin copies
       # /Applications/Nix Apps with the store's mtime of 1, so LaunchServices
       # keeps a stale cdhash after an update and AMFI refuses to launch the new
       # binary (nix-darwin/nix-darwin#1842). Home Manager's copyApps doesn't
@@ -72,8 +72,7 @@
 
       # Login items for GUI apps. Neither nix-darwin nor Home Manager (at the
       # locked revisions) ships modules for these apps, so run them as user
-      # launchd agents instead (see loginItem above). Raycast's agent lives in
-      # raycast.nix next to its package.
+      # launchd agents instead (see loginItem above).
       launchd.user.agents = {
         maccy = loginItem "Maccy";
       };

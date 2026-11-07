@@ -3,13 +3,13 @@
     { pkgs, ... }:
     {
       environment.systemPackages = with pkgs; [
-        apotris
-        prismlauncher
+        apotris # block stacking game
+        prismlauncher # Minecraft launcher
 
         # emulation
-        mame
-        mame-tools
-        dolphin-emu
+        mame # arcade emulator
+        mame-tools # disk image tools for MAME
+        dolphin-emu # GameCube and Wii emulator
         (retroarch.withCores (
           # specify retroarch cores to include
           cores: with cores; [

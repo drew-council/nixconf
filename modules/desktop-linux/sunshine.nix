@@ -20,7 +20,7 @@
             Conflicts = [ "sunshine.service" ];
           };
           Service = {
-            # output_name must match tabletHeadless.name in hyprland/default.nix.
+            # output_name must match the headless output Hyprland creates.
             ExecStart = "${lib.getExe pkgs.sunshine} capture=wlr output_name=HEADLESS-TABLET";
             Restart = "on-failure";
             RestartSec = 5;

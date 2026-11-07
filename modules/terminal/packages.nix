@@ -9,129 +9,131 @@
 
       portablePackages = with pkgs; [
         # General terminal tools
-        uutils-coreutils-noprefix
-        wget
-        ripgrep
-        fd
-        unzip
-        zip
-        _7zz
-        htop
-        gitea
-        cht-sh
-        nerdfetch
-        fastfetch
-        ffmpeg
-        imagemagick
-        zstd
-        nmap
-        rclone
-        lsof
-        jc
-        dig
-        jq
-        yq
-        cowsay
-        tetris
-        xh
-        dust
-        dua
-        hyperfine
-        fselect
-        ripgrep-all
-        tokei
-        wiki-tui
-        just
-        mask
-        mprocs
-        presenterm
-        repgrep
-        serie
-        rainfrog
-        atac
-        tdx
-        inputs.gh-stack-tui.packages.${pkgs.stdenv.hostPlatform.system}.ghst
-        linear-cli
-        ntn
-        secretspec
-        rust-stakeholder
-        file
-        pastel
-        termshot
-        aha
-        asciinema
-        asciiquarium-transparent
-        aria2
-        yt-dlp
-        xxd
+        uutils-coreutils-noprefix # rust coreutils
+        wget # file downloader
+        ripgrep # fast recursive search
+        fd # fast file finder
+        unzip # zip extraction
+        zip # zip compression
+        _7zz # 7-Zip archiver
+        htop # process viewer
+        gitea # self-hosted git forge
+        cht-sh # cheat sheet lookup
+        nerdfetch # shell startup system info
+        fastfetch # detailed system info
+        ffmpeg # audio and video conversion
+        imagemagick # image conversion
+        zstd # compression
+        nmap # network scanner
+        rclone # cloud storage sync
+        lsof # list open files
+        jc # convert command output to JSON
+        dig # DNS lookup
+        jq # JSON processor
+        yq # YAML processor
+        cowsay # talking cow
+        tetris # terminal tetris
+        xh # HTTP client
+        dust # disk usage tree
+        dua # interactive disk usage
+        hyperfine # command benchmarking
+        fselect # find files with SQL-like queries
+        ripgrep-all # ripgrep for PDFs, archives, and more
+        tokei # count lines of code
+        wiki-tui # Wikipedia TUI
+        just # command runner
+        mask # task runner defined in markdown
+        mprocs # run several commands side by side
+        presenterm # terminal slideshows
+        repgrep # interactive find and replace
+        serie # git commit graph
+        rainfrog # Postgres TUI
+        atac # API client TUI
+        tdx # markdown todo manager
+        inputs.gh-stack-tui.packages.${pkgs.stdenv.hostPlatform.system}.ghst # stacked PR TUI
+        linear-cli # Linear issue tracker CLI
+        ntn # Notion CLI
+        secretspec # declarative secrets
+        rust-stakeholder # fake busy terminal output
+        file # identify file types
+        pastel # color manipulation
+        termshot # screenshots of terminal output
+        aha # ANSI to HTML
+        asciinema # terminal session recorder
+        asciiquarium-transparent # terminal aquarium
+        aria2 # multi-connection downloader
+        yt-dlp # video downloader
+        xxd # hex dump
         bc # arbitrary precision calculator
-        screen
+        screen # serial console and multiplexer
         herdr # fancy terminal multiplexer
         tmux # simple terminal multiplexer
         signal-cli # CLI interactions with signal chat
-        (aspellWithDicts (dictionaries: with dictionaries; [ en ]))
+        (aspellWithDicts (dictionaries: with dictionaries; [ en ])) # spell checker
 
         # Document tools
-        glow
-        typst
-        mermaid-cli
-        d2
+        glow # terminal markdown viewer
+        typst # document typesetting
+        mermaid-cli # render Mermaid diagrams
+        d2 # text to diagrams
 
         # Container clients
-        docker-buildx
-        dive
-        traefik
+        docker-buildx # extended docker builds
+        dive # explore docker image layers
+        traefik # reverse proxy
 
         # Go tools
-        go
-        gopls
+        go # Go toolchain
+        gopls # Go language server
 
         # Python tools
-        pyright
-        uv
-        ruff
-        ty
+        pyright # Python type checker
+        uv # Python package manager
+        ruff # Python linter and formatter
+        ty # Python type checker and language server
 
         # Language tools
-        markdown-oxide
-        shellcheck
-        protobuf-language-server
-        buf
-        zig
-        odin
-        ols
-        rustc
-        cargo
-        rustfmt
-        nodejs
-        bun
+        markdown-oxide # markdown language server
+        shellcheck # shell script linter
+        protobuf-language-server # protobuf language server
+        buf # protobuf tooling
+        zig # Zig toolchain
+        odin # Odin compiler
+        ols # Odin language server
+        rustc # Rust compiler
+        cargo # Rust package manager
+        rustfmt # Rust formatter
+        nodejs # JavaScript runtime
+        bun # JavaScript runtime and toolkit
 
         # Nix tools
-        nix-output-monitor
-        nixfmt
-        nurl
-        manix
-        nix-search-cli
-        nil
-        nixd
-        cachix
-        nixProjectGenerator
+        nix-output-monitor # prettier Nix build output
+        nixfmt # Nix formatter
+        nurl # generate Nix fetcher calls
+        manix # Nix documentation search
+        nix-search-cli # search nixpkgs from the CLI
+        nil # Nix language server
+        nixd # Nix language server
+        cachix # binary cache client
+        nixProjectGenerator # new project template (`new-repo`)
       ];
 
       linuxPackages = with pkgs; [
-        archivemount
-        netscanner
-        s-tui
-        wavemon
-        nvtopPackages.full
+        archivemount # mount archives with FUSE
+        netscanner # network and WiFi scanner
+        s-tui # CPU stress and monitoring TUI
+        wavemon # wireless network monitor
+        nvtopPackages.full # GPU process viewer
       ];
 
       aiPackages = with inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}; [
-        claude-code
-        pi
+        claude-code # Claude Code agent
+        pi # pi coding agent
       ];
 
-      linuxAiPackages = with inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}; [ codex ];
+      linuxAiPackages = with inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}; [
+        codex # Codex coding agent
+      ];
     in
     {
       home.packages =

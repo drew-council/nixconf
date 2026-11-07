@@ -10,7 +10,7 @@
   makeWrapper,
   zoxide,
   # Workspace root directory names under $HOME, injected into the binary via
-  # -ldflags -X. Downstream of `my.user.workDir`; see modules/terminal/herdr.nix.
+  # -ldflags -X.
   workspaceRoots ? [
     "personal"
     "work"

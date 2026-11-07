@@ -48,20 +48,19 @@
       users.defaultUserShell = pkgs.zsh;
 
       # Keep privileged machine-administration tools in the system profile so they
-      # remain available through sudo's restricted PATH. User tools live in Home
-      # Manager under modules/terminal/packages.nix.
+      # remain available through sudo's restricted PATH.
       environment.systemPackages = with pkgs; [
-        hwinfo
-        lshw
-        traceroute
-        atop
-        iftop
-        iotop
-        sysdig
-        perf
-        exfatprogs
-        linuxConsoleTools
-        caligula
+        hwinfo # hardware detection
+        lshw # hardware listing
+        traceroute # network path tracing
+        atop # system and process monitor
+        iftop # per-connection bandwidth monitor
+        iotop # per-process disk I/O monitor
+        sysdig # system call tracing
+        perf # CPU profiling
+        exfatprogs # exFAT filesystem tools
+        linuxConsoleTools # joystick and serial input tools
+        caligula # disk imaging TUI
       ];
     };
 }

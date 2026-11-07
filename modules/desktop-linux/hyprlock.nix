@@ -1,3 +1,5 @@
 {
-  flake.modules.homeManager.desktop-linux.programs.hyprlock.enable = true;
+  flake.modules.homeManager.desktop-linux.programs.hyprlock = {
+    enable = true;
+  };
 }

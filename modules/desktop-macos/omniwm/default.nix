@@ -146,7 +146,7 @@
           # with the workspace swipe.
           scrollEnabled = false;
           # Hyprland: three-finger horizontal swipe switches workspace. The
-          # matching macOS gesture is turned off in ../system.nix.
+          # matching macOS gesture is turned off.
           workspaceSwipeEnabled = true;
           workspaceSwipeFingerCount = 3;
           workspaceSwipeAxis = "horizontal";

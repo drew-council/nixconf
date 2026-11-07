@@ -9,7 +9,7 @@
       ];
     };
 
-  # Linux gets these from modules/desktop-linux/packages.nix.
+  # Linux installs these as system packages.
   flake.modules.homeManager.desktop-macos =
     { pkgs, ... }:
     {

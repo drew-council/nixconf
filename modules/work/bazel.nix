@@ -81,7 +81,7 @@
         # @bazel_features_version//:version.bzl and changes the transitive .bzl
         # digest of every module extension loading bazel_features, so the committed
         # MODULE.bazel.lock reads as stale under --lockfile_mode=error. On Linux
-        # the downloaded binary runs via programs.nix-ld (modules/base/nix.nix).
+        # the downloaded binary runs via programs.nix-ld.
         bazelisk
         # Homebrew symlinks bazel -> bazelisk; the nixpkgs package only ships
         # a bazelisk binary, so provide the bazel name ourselves.

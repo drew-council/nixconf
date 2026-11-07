@@ -40,7 +40,8 @@
 
       # Login item: RunAtLoad fires the agent on every login, and `open -na`
       # launches the copyApps copy (so LaunchServices sees the real bundle) and
-      # returns immediately. ProgramArguments only, as in modules/desktop/voxtype.nix.
+      # returns immediately. ProgramArguments only: HM's waitForNixStore wrapper
+      # would otherwise duplicate the binary path.
       launchd.agents.raycast = {
         enable = true;
         config = {

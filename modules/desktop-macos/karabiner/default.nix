@@ -1,7 +1,7 @@
 # Linux-style Ctrl shortcuts on macOS: a port of Karabiner-Elements' "PC-Style
 # Shortcuts" rule set (Ctrl+C/V/X/Z/A/S/F/T/W/..., Ctrl+arrows, Home/End,
 # ...). Terminals are excluded, so Ctrl+C still sends SIGINT in Ghostty;
-# Ghostty binds Ctrl+Shift+C/V itself (modules/desktop/ghostty.nix).
+# Ghostty binds Ctrl+Shift+C/V itself.
 #
 # Upstream:
 # https://github.com/pqrs-org/KE-complex_modifications/blob/main/public/json/pc_shortcuts.json
@@ -13,10 +13,8 @@
 #   standalone Home/End rules shadowed by "PC-Style Home/End", and the
 #   PrintScreen variants shadowed by "PC-Style Screenshot".
 # - Dropped "PC-Style Switch Input" (Command+Space to Control+Space), so
-#   Command+Space still reaches Raycast (raycast.nix).
+#   Command+Space still reaches Raycast.
 # - Helium added to the browsers.
-#
-# The app itself is a Homebrew cask (system.nix).
 {
   flake.modules.homeManager.desktop-macos =
     {

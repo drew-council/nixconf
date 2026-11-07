@@ -1,5 +1,4 @@
-# Nix generation GC and Go cache cleanup. Bazel pruning lives in
-# modules/work/bazel.nix.
+# Nix generation GC and Go cache cleanup.
 {
   flake.modules = {
     homeManager.base =
@@ -27,9 +26,8 @@
 
         # Go never caps GOCACHE (only entries unused for 5 days are trimmed) and
         # never trims GOMODCACHE, so with a dozen worktrees running go test,
-        # gopls and Bazel (GO_REPOSITORY_USE_HOST_CACHE, see
-        # modules/work/bazel.nix) they once reached ~25 GiB and ~12 GiB. Both
-        # refill on demand.
+        # gopls and Bazel (GO_REPOSITORY_USE_HOST_CACHE) they once reached
+        # ~25 GiB and ~12 GiB. Both refill on demand.
         launchd.agents.go-clean = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
           enable = true;
           config = {

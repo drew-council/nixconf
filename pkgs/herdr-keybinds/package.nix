@@ -1,0 +1,65 @@
+{
+  buildGo126Module,
+  fzf,
+  # GitHub CLI used to list stacks. Pass the Home Manager configured package
+  # so it matches the gh that runs the gh stack extension in workspace panes.
+  gh,
+  git,
+  lazygit,
+  lib,
+  makeWrapper,
+  zoxide,
+  # Workspace root directory names under $HOME, injected into the binary via
+  # -ldflags -X. Downstream of `my.user.workDir`; see modules/terminal/herdr.nix.
+  workspaceRoots ? [
+    "personal"
+    "work"
+  ],
+  # Main checkout used by the dedicated sheer worktree creation action.
+  sheerRepo ? "",
+}:
+
+buildGo126Module {
+  pname = "herdrctl";
+  version = "0.1.0";
+
+  src = ./.;
+  vendorHash = "sha256-OFy2TB0JoCrVlnu1iVppyO0eK4xlB5/z+vQDziNFUIs=";
+
+  ldflags = [
+    "-X main.workspaceRoots=${lib.concatStringsSep "," workspaceRoots}"
+    "-X main.sheerRepo=${sheerRepo}"
+  ];
+
+  nativeBuildInputs = [ makeWrapper ];
+
+  # Darwin limits Unix socket paths to 104 bytes. Go's t.TempDir otherwise
+  # inherits Nix's deeply nested build directory and exceeds that limit.
+  preCheck = ''
+    export TMPDIR=/tmp
+  '';
+
+  postInstall = ''
+    mv "$out/bin/herdr-keybinds" "$out/bin/herdrctl"
+    wrapProgram "$out/bin/herdrctl" \
+      --prefix PATH : "${
+        lib.makeBinPath [
+          fzf
+          gh
+          git
+          zoxide
+        ]
+      }"
+
+    makeWrapper "$out/bin/herdrctl" "$out/bin/lg-herdr-watch" \
+      --add-flags watch-lazygit \
+      --prefix PATH : "${lib.makeBinPath [ lazygit ]}"
+  '';
+
+  meta = with lib; {
+    description = "Control Herdr extensions from the command line";
+    license = licenses.mit;
+    platforms = platforms.unix;
+    mainProgram = "herdrctl";
+  };
+}

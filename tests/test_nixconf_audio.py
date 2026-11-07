@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def load_nixconf_audio_module():
-    module_path = ROOT / "nixconf_audio/__init__.py"
+    module_path = ROOT / "pkgs/switchaudio/nixconf_audio/__init__.py"
     spec = importlib.util.spec_from_file_location(
         "nixconf_audio_module", module_path
     )
@@ -24,7 +24,7 @@ def load_nixconf_audio_module():
 
 
 def load_switchaudio_module():
-    module_path = ROOT / "home/wm/switchaudio/main.py"
+    module_path = ROOT / "pkgs/switchaudio/main.py"
     spec = importlib.util.spec_from_file_location(
         "switchaudio_main_test", module_path
     )

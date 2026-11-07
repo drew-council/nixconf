@@ -11,8 +11,13 @@ It is themed heavily with [Catppuccin](https://catppuccin.com/) Mocha (mauve acc
 
 ## Structure
 
-Each computer hostname has a folder in `hosts` and an entry in the `flake.nix` file. These can then import various host-specific modules.
-For now, all computers also import the `home/home.nix` module to use for home manager.
+`ls modules` is the menu: every entry except `flake/` and `hosts/` is a feature, and a file's folder says which hosts get it.
+
+- `modules/hosts/<hostname>/`: each computer's feature list, display data, and machine-specific config.
+- `modules/flake/`: the host builder and other flake plumbing.
+- `pkgs/<name>/package.nix`: custom packages, exposed as `pkgs.<name>`.
+
+New files must be `git add`ed before evaluating because flakes only see tracked files.
 
 ## macOS
 

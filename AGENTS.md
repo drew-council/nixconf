@@ -1,13 +1,15 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-This repository is a Nix flake for NixOS + Home Manager.
+This repository is a dendritic Nix flake for NixOS, nix-darwin, and Home Manager, built on flake-parts and import-tree.
 
-- `flake.nix`: main entrypoint, inputs, outputs, host wiring, formatter/checks.
-- `hosts/<hostname>/`: machine-specific NixOS configs (`configuration.nix`, `hardware-configuration.nix`).
-- `modules/`: reusable system modules (base, server, laptop, display manager, package sets).
-- `home/`: Home Manager modules, shell setup, WM configs, and scripts.
-- `pkgs/`: custom package definitions.
+- `flake.nix`: inputs; outputs load every `.nix` file under `modules/`.
+- `modules/`: `ls modules` is the menu. Every entry except `flake/` and `hosts/` is a feature a host lists in `hosts.<name>.features`. Place a file by which hosts get it. Each file is a flake-parts module writing `flake.modules.<nixos|darwin|homeManager>.<feature>`.
+- `modules/flake/`: host builder, nixpkgs, formatter, flake outputs.
+- `modules/hosts/<hostname>/`: per-host features, display data, and machine-specific config. Paths with a `/_` component (`_hardware.nix`) are not auto-loaded and are imported explicitly.
+- `pkgs/<name>/package.nix`: custom packages, exposed as `pkgs.<name>`.
+
+New files MUST be `git add`ed before evaluating: flakes only see tracked files.
 
 ## Build, Test, and Development Commands
 - `nix flake check`: run flake checks (includes formatting check from `treefmt-nix`).
@@ -15,8 +17,8 @@ This repository is a Nix flake for NixOS + Home Manager.
 - `nh os build`: build config for the current host.
 
 ## Coding Style & Naming Conventions
-- Nix: keep modules focused and composable; prefer small imports over monolithic files.
-- File naming: use lowercase kebab/snake style as already used (`remote-desktop.nix`, `hyprmonitor`).
+- Nix: keep modules focused and composable; prefer small files over monolithic ones.
+- File naming: use lowercase kebab/snake style as already used (`virt-manager.nix`, `hypr-monitor-profile`).
 - Python: max line length 79 (`pyproject.toml`), lint with Ruff.
 - Shell scripting: prefer Nushell for new scripts when practical.
 

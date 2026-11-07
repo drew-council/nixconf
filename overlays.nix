@@ -44,7 +44,6 @@ in
 
   protobuf-language-server = super.callPackage ./pkgs/protobuf-language-server.nix { };
   herdr-keybinds = super.callPackage ./home/programs/herdr/keybinds-plugin/package.nix { };
-  herdr-web = super.callPackage ./pkgs/herdr-web { };
   lg-herdr-watch =
     super.runCommand "lg-herdr-watch-0.1.0"
       {

@@ -58,10 +58,6 @@
     ];
   };
 
-  # ghostty-web provides a real shell without login authentication, so this
-  # port must only be reachable from the trusted LAN.
-  services.herdr-web.enable = true;
-
   networking.firewall = {
     enable = lib.mkForce true;
     allowedTCPPorts = [

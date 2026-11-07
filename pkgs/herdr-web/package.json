@@ -1,8 +1,0 @@
-{
-  "name": "herdr-web",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "@ghostty-web/demo": "0.4.0-next.20.g1858a59"
-  }
-}

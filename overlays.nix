@@ -12,9 +12,6 @@ in
   hyprland = hyprlandPackages.hyprland;
   xdg-desktop-portal-hyprland = hyprlandPackages.xdg-desktop-portal-hyprland;
 
-  # Use rocmPackages from nixpkgs-stable to avoid crashes with unstable
-  rocmPackages =
-    inputs.nixpkgs-stable.legacyPackages.${super.stdenv.hostPlatform.system}.rocmPackages;
   python3Packages = super.python3Packages.overrideScope (
     python-self: python-super: {
       hyprpy = super.callPackage ./pkgs/hyprpy.nix { };
@@ -88,9 +85,6 @@ in
 
   ntn = super.callPackage ./pkgs/ntn.nix { };
   nh-cachix = super.callPackage ./pkgs/nh-cachix.nix { };
-
-  amd-ctk = super.callPackage ./pkgs/amd-ctk.nix { };
-  amd-container-runtime = super.callPackage ./pkgs/amd-container-runtime.nix { };
 
   # nixpkgs version takes forever to build all the driver versions
   nvtop-appimage =

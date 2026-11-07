@@ -56,7 +56,6 @@ let
     linear-cli
     ntn
     secretspec
-    clinfo
     rust-stakeholder
     file
     pastel

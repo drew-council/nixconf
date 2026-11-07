@@ -248,9 +248,6 @@ in
     };
   };
 
-  # add pocl to always have cpu opencl support at minimum
-  hardware.graphics.extraPackages = with pkgs; [ pocl ];
-
   security.chromiumSuidSandbox.enable = true;
 
   # Some programs need SUID wrappers, can be configured further or are

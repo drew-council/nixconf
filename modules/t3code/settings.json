@@ -79,7 +79,8 @@
     }
   },
   "projectSettingsFolded": true,
-  "idleCompaction": "onReturn",
+  "compactIdleThreads": true,
+  "idleCompaction": "beforeCacheExpires",
   "linkedEnvironmentsEnabled": true,
   "defaultThreadEnvMode": "local",
   "terminalShell": "nu",

@@ -84,6 +84,7 @@
 
       generatedLua = {
         gaming = builtins.elem "gaming" config.my.host.features;
+        nvidia = builtins.elem "nvidia" config.my.host.features;
         gameMode = builtins.elem "game-mode" config.my.host.features;
         defaults = {
           browser = "zen-beta";

@@ -1,8 +1,17 @@
 #!/usr/bin/env nu
 
-# tables are injected at nix eval time, see ./package.nix
-const commands = "@commands@"
-const aliases = "@aliases@"
+const aliases = {
+  a: "add"
+  c: "checkout"
+  i: "init"
+  m: "modify"
+  u: "unstack"
+  v: "view"
+  l: "link"
+  p: "push"
+  r: "rebase"
+  s: "sync"
+}
 
 # subcommands implemented here rather than by `gh stack`
 const local_commands = [
@@ -11,6 +20,13 @@ const local_commands = [
   {name: "pull" description: "Make the local stack match GitHub, without rebasing or pushing"}
 ]
 
+# subcommands of `gh stack`, parsed from its help output
+def stack-commands [] {
+  ^gh stack --help
+  | lines
+  | parse --regex '^  (?<name>[a-z][a-z-]*) {2,}(?<description>\S.*\S)$'
+}
+
 def fail [message: string] {
   print -e $message
   exit 1
@@ -18,7 +34,7 @@ def fail [message: string] {
 
 def pick-subcommand [] {
   let selection = (
-    $commands
+    stack-commands
     | append $local_commands
     | each {|command| $"($command.name)(char tab)($command.description)" }
     | str join "\n"

@@ -7,6 +7,7 @@ let
     "canopy-local"
     "dockerkillall"
     "flakeup"
+    "gs"
     "ma"
     "mergequeue"
     "mnix"

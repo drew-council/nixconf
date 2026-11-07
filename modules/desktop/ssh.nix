@@ -11,28 +11,36 @@
           inherit text;
         };
 
+      # quoted because the macOS socket path contains a space
+      identityAgent = ''"${onePassword.agentSocket}"'';
+
       xpsKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINPILydKagpHBNoXFBEcUxqf4wFZDD6GRY09FGfLt/EH";
     in
     {
-      # home manager version adds several extra options i do not want
-      home.file.".ssh/config".text = ''
-        Host igneous
-            HostName 192.168.1.123
-            User drew
-            IdentityFile ${publicKeyFile "igneous" config.my.user.sshPublicKey}
-            IdentitiesOnly yes
-            IdentityAgent "${onePassword.agentSocket}"
+      programs.ssh = {
+        enable = true;
+        enableDefaultConfig = false;
 
-        Host xps
-            HostName 192.168.1.145
-            User drew
-            IdentityFile ${publicKeyFile "xps" xpsKey}
-            IdentitiesOnly yes
-            IdentityAgent "${onePassword.agentSocket}"
+        settings = {
+          igneous = {
+            HostName = "192.168.1.123";
+            User = "drew";
+            IdentityFile = "${publicKeyFile "igneous" config.my.user.sshPublicKey}";
+            IdentitiesOnly = true;
+            IdentityAgent = identityAgent;
+          };
 
-        Host *
-            IdentityAgent "${onePassword.agentSocket}"
-      '';
+          xps = {
+            HostName = "192.168.1.145";
+            User = "drew";
+            IdentityFile = "${publicKeyFile "xps" xpsKey}";
+            IdentitiesOnly = true;
+            IdentityAgent = identityAgent;
+          };
+
+          "*".IdentityAgent = identityAgent;
+        };
+      };
 
       # You can test the available keys and their order of attempt by running:
       #  SSH_AUTH_SOCK=~/.1password/agent.sock ssh-add -l

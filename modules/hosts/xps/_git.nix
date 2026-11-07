@@ -9,18 +9,16 @@ let
 in
 {
   home-manager.users.${config.my.user.name} = {
-    # OpenSSH uses the first value; precede the shared Host * block.
-    home.file.".ssh/config".text = lib.mkBefore ''
-      Host github.com ssh.github.com
-          User git
-          IdentityFile ${keyFile}
-          IdentityAgent none
-          IdentitiesOnly yes
-          BatchMode yes
-          PasswordAuthentication no
-          KbdInteractiveAuthentication no
-          StrictHostKeyChecking yes
-    '';
+    programs.ssh.settings."github.com ssh.github.com" = {
+      User = "git";
+      IdentityFile = keyFile;
+      IdentityAgent = "none";
+      IdentitiesOnly = true;
+      BatchMode = true;
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      StrictHostKeyChecking = true;
+    };
 
     programs.git = {
       signing.signer = lib.mkForce "${pkgs.openssh}/bin/ssh-keygen";

@@ -24,7 +24,6 @@ let
 
   generatedLua = {
     host = osConfig.networking.hostName;
-    nvidia = osConfig.nvidiaEnable;
     personal = vars.isPersonal osConfig;
     gameMode = osConfig.gameMode.enable;
     defaults = {

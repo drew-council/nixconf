@@ -85,12 +85,10 @@ in
           # hcl # load hashicorp config lang files, incompatible version
           # highlight # highlight source code
           # net # list network interfaces, broken
-          # polars # dataframe operations, broken with Rust 1.97
+          polars # dataframe operations
           query # query sql, json, etc
           # skim # integrates `sk` fuzzy finder
           # units # easily convert between common units, incompatible version
-
-          # pkgs.nu-plugin-toon # custom plugin for TOON support
         ];
         shellAliases = myShellAliases;
         environmentVariables = mySessionVariables // {

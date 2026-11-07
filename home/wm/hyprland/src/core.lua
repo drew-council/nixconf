@@ -66,13 +66,6 @@ hl.config({
 	},
 })
 
-if generated.nvidia then
-	hl.env("LIBVA_DRIVER_NAME", "nvidia")
-	hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
-	hl.env("WLR_NO_HARDWARE_CURSORS", "1")
-	hl.env("OGL_DEDICATED_HW_STATE_PER_CONTEXT", "ENABLE_ROBUST")
-end
-
 hl.gesture({
 	fingers = 3,
 	direction = "horizontal",

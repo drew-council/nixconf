@@ -17,7 +17,6 @@ in
     ./fhs-shebangs.nix
     ./game-mode.nix
     ./laptop.nix
-    ./nvidia.nix
     ./remote-desktop.nix
     ./t3code.nix
     ./windowmanager.nix

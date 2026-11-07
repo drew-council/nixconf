@@ -12,12 +12,6 @@ in
   hyprland = hyprlandPackages.hyprland;
   xdg-desktop-portal-hyprland = hyprlandPackages.xdg-desktop-portal-hyprland;
 
-  python3Packages = super.python3Packages.overrideScope (
-    python-self: python-super: {
-      hyprpy = super.callPackage ./pkgs/hyprpy.nix { };
-    }
-  );
-
   # nixpkgs lags upstream, and home/wm/omniwm/defaults.toml must match the
   # settings schema of the running version. Recapture it when bumping.
   omniwm = super.omniwm.overrideAttrs (oldAttrs: {
@@ -28,18 +22,6 @@ in
     };
   });
 
-  # atuin 18.23.0's e2e pty tests time out on darwin (same failure on Hydra,
-  # so there's no cached build). Skip checks on darwin; revisit when Hydra's
-  # aarch64-darwin job is green again.
-  atuin =
-    if super.stdenv.hostPlatform.isDarwin then
-      super.atuin.overrideAttrs (_: {
-        doCheck = false;
-      })
-    else
-      super.atuin;
-
-  protobuf-language-server = super.callPackage ./pkgs/protobuf-language-server.nix { };
   herdr-keybinds = super.callPackage ./home/programs/herdr/keybinds-plugin/package.nix { };
   lg-herdr-watch =
     super.runCommand "lg-herdr-watch-0.1.0"
@@ -80,7 +62,6 @@ in
       # mirror implements the same API; Cargo.lock still verifies every crate.
       cratesDownloadUrl = "https://rsproxy.cn/api/v1/crates";
     };
-  nu-plugin-toon = super.callPackage ./pkgs/nu_plugin_toon.nix { };
   linear-cli = super.callPackage ./pkgs/linear-cli.nix { };
 
   ntn = super.callPackage ./pkgs/ntn.nix { };
@@ -100,19 +81,4 @@ in
       inherit pname version src;
       meta.platforms = [ "x86_64-linux" ];
     };
-
-  # these claude_integration tests fail in the build sandbox
-  secretspec = super.secretspec.overrideAttrs (oldAttrs: {
-    checkFlags = (oldAttrs.checkFlags or [ ]) ++ [
-      "--skip=configure_refuses_to_replace_an_unmanaged_helper"
-      "--skip=unconfigure_refuses_to_remove_an_edited_managed_helper"
-    ];
-  });
-
-  # this package takes an *extremely* long time to check through all the files
-  catppuccin-papirus-folders = super.catppuccin-papirus-folders.overrideAttrs (
-    finalAttrs: previousAttrs: {
-      doCheck = false;
-    }
-  );
 }

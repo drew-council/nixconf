@@ -11,7 +11,6 @@ let
 in
 {
   imports = [
-    ./nvidia.nix
     ./packages/terminal.nix
   ];
 

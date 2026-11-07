@@ -24,7 +24,7 @@
         settings = {
           igneous = {
             HostName = "192.168.1.123";
-            User = "drew";
+            User = config.my.user.name;
             IdentityFile = "${publicKeyFile "igneous" config.my.user.sshPublicKey}";
             IdentitiesOnly = true;
             IdentityAgent = identityAgent;
@@ -32,7 +32,7 @@
 
           xps = {
             HostName = "192.168.1.145";
-            User = "drew";
+            User = config.my.user.name;
             IdentityFile = "${publicKeyFile "xps" xpsKey}";
             IdentitiesOnly = true;
             IdentityAgent = identityAgent;

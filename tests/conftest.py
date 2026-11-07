@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+SWITCHAUDIO = Path(__file__).resolve().parents[1] / "pkgs/switchaudio"
 
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+if str(SWITCHAUDIO) not in sys.path:
+    sys.path.insert(0, str(SWITCHAUDIO))

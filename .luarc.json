@@ -1,12 +1,13 @@
 {
   "workspace": {
     "library": [
-      "/home/drew/.nix-profile/share/hypr/stubs"
+      "/run/current-system/sw/share/hypr/stubs"
     ]
   },
   "diagnostics": {
     "globals": [
-      "hl"
+      "hl",
+      "vim"
     ]
   }
 }

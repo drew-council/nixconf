@@ -1,20 +1,20 @@
 ---
 name: hyprland-lua-config
-description: Work on this repo's Hyprland Lua configuration. Use when editing home/wm/hyprland Lua modules, generated Home Manager wiring for hypr/hyprland.lua, Hyprland Lua APIs, hl.config tables, binds, dispatchers, events, monitors, window rules, animations, or Lua config docs/stubs.
+description: Work on this repo's Hyprland Lua configuration. Use when editing modules/desktop-linux/hyprland Lua modules, generated Home Manager wiring for hypr/hyprland.lua, Hyprland Lua APIs, hl.config tables, binds, dispatchers, events, monitors, window rules, animations, or Lua config docs/stubs.
 ---
 
 # Hyprland Lua Config
 
 This repo configures Hyprland through Home Manager and Lua:
 
-- Home Manager wiring: `home/wm/hyprland/default.nix`
-- Lua modules: `home/wm/hyprland/src/*.lua`
+- Home Manager wiring: `modules/desktop-linux/hyprland/default.nix`
+- Lua modules: `modules/desktop-linux/hyprland/src/*.lua`
 - Generated runtime entrypoint: `$XDG_CONFIG_HOME/hypr/hyprland.lua`
 - Generated Nix data module: `$XDG_CONFIG_HOME/hypr/nixconf/generated.lua`
 
 The generated entrypoint extends `package.path`, clears cached modules, then
 requires the `nixconf.*` modules in the order listed in
-`home/wm/hyprland/default.nix`.
+`modules/desktop-linux/hyprland/default.nix`.
 
 ## Documentation Snapshot
 
@@ -46,8 +46,8 @@ open .agents/skills/hyprland-lua-config/references/hyprland-lua-docs.json | get 
 
 ## Editing Rules
 
-- Keep Lua config split into focused modules under `home/wm/hyprland/src`.
-- Put host/package/path data in `generatedLua` in `home/wm/hyprland/default.nix`,
+- Keep Lua config split into focused modules under `modules/desktop-linux/hyprland/src`.
+- Put host/package/path data in `generatedLua` in `modules/desktop-linux/hyprland/default.nix`,
   then consume it from Lua with `require("nixconf.generated")`.
 - Use Lua table syntax accepted by Hyprland 0.55+ (`hl.config({ ... })`,
   `hl.window_rule({ ... })`, `hl.on(...)`, `hl.dsp.*`), not old hyprlang

@@ -3,7 +3,13 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
+
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+
+    import-tree.url = "github:denful/import-tree";
 
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -16,10 +22,15 @@
     };
 
     # secrets management through 1Password
-    opnix.url = "github:brizzbuzz/opnix";
+    opnix = {
+      url = "github:brizzbuzz/opnix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    catppuccin.url = "github:catppuccin/nix";
-    hyprland.url = "github:hyprwm/Hyprland";
+    catppuccin = {
+      url = "github:catppuccin/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
 
     zen-browser = {
@@ -41,7 +52,7 @@
     };
 
     weave = {
-      url = "github:drew-council/weave/drew-council-tweaks";
+      url = "github:ataraxy-labs/weave";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -104,269 +115,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
     };
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs =
-    { nixpkgs, self, ... }@inputs:
-    let
-      lib = nixpkgs.lib;
-
-      nixpkgsSettings = {
-        config.allowUnfree = true;
-        config.permittedInsecurePackages = [
-          "electron-39.8.10"
-        ];
-        overlays = [
-          (import ./overlays.nix { inherit inputs; })
-          # builds against this flake's nixpkgs, including its Electron
-          inputs.gchat-desktop.overlays.default
-          inputs.t3code.overlays.default
-        ];
-      };
-
-      eachSystem =
-        f:
-        lib.genAttrs (import inputs.systems) (
-          system:
-          f (
-            import nixpkgs (
-              {
-                inherit system;
-              }
-              // nixpkgsSettings
-            )
-          )
-        );
-
-      treefmtEval = eachSystem (
-        pkgs:
-        inputs.treefmt-nix.lib.evalModule pkgs {
-          imports = [
-            inputs.topiary-nushell.treefmtModules.default
-            ./treefmt.nix
-          ];
-        }
-      );
-
-      buildConfig = builtins.fromJSON (builtins.readFile ./build_config.json);
-
-      mkVars =
-        {
-          home,
-          defaults,
-        }:
-        rec {
-          user = "drew";
-          inherit home defaults;
-          flakePath = "${home}/nixconf";
-          workDir = "${home}/work";
-          hmBackupFileExtension = "hmbackup";
-          lockScreenPic = builtins.fetchurl {
-            url = "https://filedn.com/l0xkAHTdfcEJNc2OW7dfBny/lockscreen.png";
-            sha256 = "1w3biszx1iy9qavr2cvl4gxrlf3lbrjpp50bp8wbi3rdpzjgv4kl";
-          };
-          isPersonal = _: true;
-        };
-
-      linuxVars = mkVars {
-        home = "/home/drew";
-        defaults = {
-          tty = "ghostty";
-          fileManager = "dolphin";
-          browser = "zen-beta";
-          calculator = "qalculate-qt";
-          editor = "zeditor --new";
-          termEditor = "nvim";
-          shell = "nu";
-        };
-      };
-
-      darwinVars = mkVars {
-        home = "/Users/drew";
-        defaults = {
-          tty = "Terminal";
-          fileManager = "open";
-          browser = "open";
-          calculator = "open -a Calculator";
-          editor = "nvim";
-          termEditor = "nvim";
-          shell = "nu";
-        };
-      };
-
-      mkPlatform = isLinux: {
-        inherit isLinux;
-        isDarwin = !isLinux;
-      };
-
-      mkHomeManager =
-        {
-          isLinux,
-          vars,
-        }:
-        {
-          home-manager = {
-            extraSpecialArgs = {
-              inherit inputs vars;
-              platform = mkPlatform isLinux;
-            };
-            backupFileExtension = vars.hmBackupFileExtension;
-            users.${vars.user} = {
-              nixpkgs = nixpkgsSettings;
-              imports = [
-                inputs.nix-index-database.homeModules.default
-                inputs.nixvim.homeModules.nixvim
-                # Darwin-aware: retrieves secrets during HM activation, no systemd.
-                inputs.opnix.homeManagerModules.default
-                ./home
-              ]
-              ++ lib.optionals isLinux [
-                inputs.catppuccin.homeModules.catppuccin
-              ];
-            };
-          };
-        };
-
-      linuxHome = mkHomeManager {
-        isLinux = true;
-        vars = linuxVars;
-      };
-      darwinHome = mkHomeManager {
-        isLinux = false;
-        vars = darwinVars;
-      };
-
-      getPcConfig =
-        hostname:
-        lib.nixosSystem {
-          specialArgs = {
-            inherit inputs;
-            vars = linuxVars;
-            platform = mkPlatform true;
-          };
-          modules = [
-            {
-              nixpkgs = nixpkgsSettings // {
-                hostPlatform = "x86_64-linux";
-              };
-              networking.hostName = hostname;
-            }
-
-            inputs.catppuccin.nixosModules.catppuccin
-            inputs.nix-flatpak.nixosModules.nix-flatpak
-          ]
-          ++ [
-            ./modules/base.nix
-            ./modules/disk-cleanup.nix
-            ./hosts/${hostname}/configuration.nix
-            inputs.home-manager.nixosModules.home-manager
-            linuxHome
-          ];
-        };
-
-      pcConfigs = lib.genAttrs buildConfig.hosts getPcConfig;
-
-      getServerConfig =
-        hostname:
-        lib.nixosSystem {
-          specialArgs = {
-            inherit inputs;
-            vars = linuxVars;
-          };
-          modules = [
-            {
-              nixpkgs = nixpkgsSettings // {
-                hostPlatform = "x86_64-linux";
-              };
-              networking.hostName = hostname;
-            }
-
-            ./modules/server.nix
-            ./hosts/${hostname}/configuration.nix
-          ];
-        };
-
-      serverConfigs = lib.genAttrs [ "nixos-0" ] getServerConfig;
-
-      # A cloud server with the full Home Manager setup; see hosts/devbox.
-      devboxConfig = lib.nixosSystem {
-        specialArgs = {
-          inherit inputs;
-          vars = linuxVars;
-          platform = mkPlatform true;
-        };
-        modules = [
-          {
-            nixpkgs = nixpkgsSettings // {
-              hostPlatform = "x86_64-linux";
-            };
-            networking.hostName = "devbox";
-          }
-
-          ./modules/server.nix
-          # Declares gameMode, which the Hyprland Home Manager config reads.
-          ./modules/game-mode.nix
-          ./modules/t3code.nix
-          ./modules/disk-cleanup.nix
-          ./hosts/devbox/configuration.nix
-          inputs.home-manager.nixosModules.home-manager
-          linuxHome
-        ];
-      };
-
-      configs = pcConfigs // serverConfigs // { devbox = devboxConfig; };
-
-      darwinConfig = inputs.nix-darwin.lib.darwinSystem {
-        specialArgs = {
-          inherit inputs;
-          vars = darwinVars;
-          platform = mkPlatform false;
-        };
-        modules = [
-          {
-            nixpkgs = nixpkgsSettings // {
-              hostPlatform = "aarch64-darwin";
-            };
-          }
-          ./hosts/macos/configuration.nix
-          ./modules/disk-cleanup.nix
-          inputs.home-manager.darwinModules.home-manager
-          darwinHome
-        ];
-      };
-    in
-    {
-      nixosConfigurations = configs;
-      darwinConfigurations.macos = darwinConfig;
-
-      packages = eachSystem (pkgs: {
-        nvim = inputs.nixvim.legacyPackages.${pkgs.stdenv.hostPlatform.system}.makeNixvim (
-          import ./nixvim { inherit pkgs; }
-        );
-        topiary-nushell = inputs.topiary-nushell.packages.${pkgs.stdenv.hostPlatform.system}.default;
-        linear-cli = pkgs.linear-cli;
-        ntn = pkgs.ntn;
-      });
-
-      formatter = eachSystem (pkgs: treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
-
-      checks = eachSystem (
-        pkgs:
-        {
-          formatting = treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
-          linear-cli = pkgs.runCommand "linear-cli-check" { nativeBuildInputs = [ pkgs.linear-cli ]; } ''
-            linear --version > "$out"
-          '';
-          ntn = pkgs.runCommand "ntn-check" { nativeBuildInputs = [ pkgs.ntn ]; } ''
-            ntn --version > "$out"
-          '';
-        }
-        // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-          darwin-system = darwinConfig.config.system.build.toplevel;
-          home-manager = darwinConfig.config.home-manager.users.${darwinVars.user}.home.activationPackage;
-          herdr-keybinds = pkgs.herdr-keybinds;
-        }
-      );
-    };
+  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
 }

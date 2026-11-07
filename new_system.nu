@@ -3,15 +3,6 @@
 
 use std/assert
 
-def conf-dir [] {
-  let script_dir = ($env.FILE_PWD? | default "")
-  if ($script_dir | path join "flake.nix" | path exists) {
-    $script_dir
-  } else {
-    $nu.home-dir | path join "nixconf"
-  }
-}
-
 def say [msg: string] {
   print $"(ansi cyan_bold)($msg)(ansi reset)"
 }
@@ -21,7 +12,7 @@ def is-darwin [] {
 }
 
 def substituter-options [] {
-  let config = (open ((conf-dir) | path join "substituters_config.json"))
+  let config = (open substituters_config.json)
   [
     "--option"
     "extra-substituters"
@@ -52,82 +43,70 @@ def rebuild [hostname: string] {
   }
 }
 
-def current-hostname [] {
-  if (is-darwin) { "macos" } else { (hostname) }
+def host-template [hostname: string] {
+  let system = $"($nu.os-info.arch)-linux"
+  let state_version = (nixos-version | split row "." | first 2 | str join ".")
+  $"{
+  hosts.($hostname) = {
+    system = \"($system)\";
+    features = [
+      \"base\"
+      \"terminal\"
+      \"desktop\"
+      \"desktop-linux\"
+    ];
+    module = {
+      imports = [ ./_hardware.nix ];
+      system.stateVersion = \"($state_version)\";
+    };
+  };
+}"
 }
 
-def "main rebuild" [] {
-  cd (conf-dir)
-  rebuild (current-hostname)
+def create-host [hostname: string] {
+  let host_dir = ("modules/hosts" | path join $hostname)
+  mkdir $host_dir
+
+  let host_file = ($host_dir | path join "default.nix")
+  if ($host_file | path exists) {
+    say $"($host_file) already exists, keeping it"
+  } else {
+    host-template $hostname | save $host_file
+  }
+
+  assert ("/etc/nixos/hardware-configuration.nix" | path exists) "/etc/nixos/hardware-configuration.nix not found"
+  cp --force /etc/nixos/hardware-configuration.nix ($host_dir | path join "_hardware.nix")
+
+  # flakes only see tracked files
+  git add $host_dir
 }
 
-def "main install" [] {
+def "main install" [hostname?: string] {
   let darwin = (is-darwin)
+  if (not $darwin) and ($hostname == null) {
+    error make {msg: "usage: new_system.nu install <hostname>"}
+  }
   let hostname = if $darwin {
     say "darwin detected, using the fixed `macos` configuration"
     "macos"
   } else {
-    (input "new system's hostname: ")
+    $hostname
   }
 
-  cd ~
   $env.NIX_CONFIG = "experimental-features = nix-command flakes"
 
-  let git_user = {
-    "user.email": "andrew.p.council@gmail.com"
-    "user.name": "drew-council"
-  }
-
-  # set git user conf settings (temp, will come from home manager later)
-  $git_user | items {|key val|
-    git config --global $key $val
-  }
-
-  # clone with https (will switch to proper ssh later)
-  let conf = $env.HOME | path join "nixconf"
-  if ($conf | path exists | not $in) {
-    git clone https://github.com/drew-council/nixconf.git
+  # clone with https (`configure` switches to ssh later)
+  let conf = ($nu.home-dir | path join "nixconf")
+  if not ($conf | path exists) {
+    git clone https://github.com/drew-council/nixconf.git $conf
   }
   cd $conf
 
-  let host_dir = ($conf | path join "hosts" $hostname)
-  assert ($host_dir | path exists) $"host config directory not found: ($host_dir)"
-
-  if $darwin {
-    say "skipping hardware configuration and host registration (not used on darwin)"
-  } else {
-    let hardware_config = ($host_dir | path join "hardware-configuration.nix")
-    assert ("/etc/nixos/hardware-configuration.nix" | path exists) "/etc/nixos/hardware-configuration.nix not found"
-    say $"copying hardware configuration to ($hardware_config)"
-    cp --force /etc/nixos/hardware-configuration.nix $hardware_config
-
-    # add hostname to the generated configurations
-    let config_file = ($conf | path join "build_config.json")
-    let old_config = (open $config_file)
-    let existing_hosts = ($old_config | get hosts)
-    let updated_hosts = if ($existing_hosts | any {|host| $host == $hostname }) {
-      $existing_hosts
-    } else {
-      $existing_hosts | append $hostname
-    }
-    (
-      $old_config
-      | update hosts $updated_hosts
-      | save --force $config_file
-    )
-
-    # start new branch for this host temporarily
-    git checkout -b $hostname
-    git add -A
-    git commit -m $"adding host ($hostname)"
+  if not $darwin {
+    create-host $hostname
   }
 
   rebuild $hostname
-
-  # unset temp git config settings
-  $git_user | items {|key val|
-    git config --global --unset $key
-  }
 
   if $darwin {
     say "finished setup, open a new shell and set up git properly for ~/nixconf"
@@ -182,5 +161,5 @@ def "main configure" [] {
 }
 
 def main [] {
-  say "choose a subcommand"
+  print "usage: new_system.nu install <hostname> | configure"
 }

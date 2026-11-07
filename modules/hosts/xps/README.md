@@ -32,7 +32,7 @@ provides the HTTPS name.
 
 Browser logins use a read-only 1Password service account scoped to **Agent Access**.
 Use `/run/current-system/sw/bin/hermes-op` as the vault CLI in runtime settings.
-The frontend patch in `patches/` supplies dashboard verification-code prompts
+The frontend patch in `modules/hermes/patches/` supplies dashboard verification-code prompts
 and includes regression tests.
 
 ## Git and deployment

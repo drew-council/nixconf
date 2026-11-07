@@ -1,4 +1,3 @@
-{ inputs, ... }:
 {
   hosts.xps = {
     system = "x86_64-linux";
@@ -10,6 +9,7 @@
       "desktop"
       "desktop-linux"
       "t3code"
+      "hermes"
     ];
 
     module =
@@ -17,8 +17,6 @@
       {
         imports = [
           ./_hardware.nix
-          (import ./_hermes.nix { inherit inputs; })
-          ./_git.nix
           ./_peanut-map.nix
         ];
 

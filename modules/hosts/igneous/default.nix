@@ -152,12 +152,11 @@ in
 
           # mount storage drive
           "/mnt/storage" = {
-            device = "/dev/disk/by-uuid/6422C81A22C7EF5C";
-            fsType = "ntfs";
+            device = "/dev/disk/by-uuid/552ef407-76b5-4ce3-84cc-9c278eda76c2";
+            fsType = "xfs";
             options = [
-              "rw"
-              "uid=1000"
-              "gid=100"
+              "noatime"
+              "nofail"
             ];
           };
         };

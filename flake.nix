@@ -63,7 +63,7 @@
     };
 
     tuicr = {
-      url = "github:drew-council/tuicr/bizmythy-tweaks";
+      url = "github:drew-council/tuicr/drew/local-patches";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

@@ -1083,16 +1083,16 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1793289222,
-        "narHash": "sha256-tNXVzsIOfEAsnd2PncUkKd9nMlTbc20cHdNA91mSSS8=",
+        "lastModified": 1794162954,
+        "narHash": "sha256-crGSnUCgwXomYVtRqGFLVUPkyaTpZeX/SuZ6yw8i3/k=",
         "owner": "drew-council",
         "repo": "tuicr",
-        "rev": "a68ac973d6b52c82babcc88339c3b62e7998a21b",
+        "rev": "e2934d6c79680b8b000738cab19f34d2a7cf4b68",
         "type": "github"
       },
       "original": {
         "owner": "drew-council",
-        "ref": "bizmythy-tweaks",
+        "ref": "drew/local-patches",
         "repo": "tuicr",
         "type": "github"
       }

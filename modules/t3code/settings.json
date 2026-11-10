@@ -1,9 +1,29 @@
 {
+  "favorites": [
+    {
+      "provider": "claudeAgent",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "provider": "claudeAgent",
+      "model": "claude-fable-5-2"
+    },
+    {
+      "provider": "pi",
+      "model": "github-copilot/gpt-6.1-sol"
+    },
+    {
+      "provider": "pi",
+      "model": "google-vertex/gemini-4-carbon"
+    }
+  ],
   "providerModelPreferences": {
     "pi": {
       "hiddenModels": [
         "default",
+        "fireworks/accounts/fireworks/models/glm-5p3",
         "github-copilot/gpt-5.6-luna",
+        "github-copilot/gpt-5.6-sol",
         "github-copilot/gpt-5.6-terra",
         "github-copilot/gpt-6-astra",
         "github-copilot/gpt-6-luna",
@@ -46,6 +66,15 @@
       }
     ],
     "67041662-6241-4a0e-b444-e5e4041969ed": [
+      {
+        "id": "pnpm-install-2",
+        "name": "pnpm install",
+        "command": "pnpm install",
+        "icon": "play",
+        "runOnWorktreeCreate": true
+      }
+    ],
+    "72d36ff6-8801-421d-a5f3-553332b475e2": [
       {
         "id": "pnpm-install-2",
         "name": "pnpm install",
@@ -109,6 +138,28 @@
       "includeInPullRequestList": true,
       "branchNamingMode": "static",
       "branchNamePrefix": "drew"
+    },
+    "72d36ff6-8801-421d-a5f3-553332b475e2": {
+      "defaultModelSelection": {
+        "instanceId": "claudeAgent",
+        "model": "claude-opus-5-5",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ]
+      },
+      "defaultThreadEnvMode": "worktree",
+      "defaultProjectScripts": [
+        {
+          "id": "pnpm-install-2",
+          "name": "pnpm install",
+          "command": "pnpm install",
+          "icon": "play",
+          "runOnWorktreeCreate": true
+        }
+      ]
     }
   },
   "projectSettingsFolded": true,

@@ -51,6 +51,7 @@
         atac # API client TUI
         tdx # markdown todo manager
         inputs.gh-stack-tui.packages.${pkgs.stdenv.hostPlatform.system}.ghst # stacked PR TUI
+        inputs.gh-stack-tui.packages.${pkgs.stdenv.hostPlatform.system}.ghrv # review queue TUI
         linear-cli # Linear issue tracker CLI
         ntn # Notion CLI
         secretspec # declarative secrets

@@ -86,7 +86,7 @@
         # Homebrew symlinks bazel -> bazelisk; the nixpkgs package only ships
         # a bazelisk binary, so provide the bazel name ourselves.
         (pkgs.writeShellScriptBin "bazel" ''exec ${lib.getExe bazelisk} "$@"'')
-        bazelprune # also runs daily, see launchd.agents / systemd.user.timers
+        bazelprune # also runs hourly, see launchd.agents / systemd.user.timers
       ];
 
       # Bazel does not expand ~ or $HOME in .bazelrc, so every path is absolute.
@@ -112,7 +112,7 @@
         # Garbage-collect the disk cache in the background once a server has been
         # idle for 5m: least recently used entries go until it is under the size,
         # and entries unused for the max age go regardless. Keep the max age above
-        # bazelprune's --max-idle-days so a pruned worktree rebuilds from clones.
+        # bazelprune's --max-idle-hours so a pruned worktree rebuilds from clones.
         common --experimental_disk_cache_gc_max_size=50G
         common --experimental_disk_cache_gc_max_age=7d
         # The repo contents cache keeps every version of every external repo it
@@ -149,19 +149,14 @@
         common --@com_google_protobuf//bazel/toolchains:allow_nonstandard_protoc
       '';
 
-      # Daily run of bazelprune. Worktrees come and go daily, so without this
-      # the stranded and idle output bases quietly eat the disk. launchd runs
-      # a missed interval on wake.
+      # Hourly run of bazelprune. Agent worktrees each build a base of up to
+      # tens of GiB, so a day of them can fill the disk. launchd runs a missed
+      # interval on wake.
       launchd.agents.bazelprune = lib.mkIf isDarwin {
         enable = true;
         config = {
           ProgramArguments = [ "${bazelprune}/bin/bazelprune" ];
-          StartCalendarInterval = [
-            {
-              Hour = 10;
-              Minute = 0;
-            }
-          ];
+          StartInterval = 3600;
           StandardOutPath = "${bazelpruneLogDir}/stdout.log";
           StandardErrorPath = "${bazelpruneLogDir}/stderr.log";
         };
@@ -177,13 +172,15 @@
         Unit.Description = "Remove Bazel output bases that are orphaned or idle";
         Service = {
           Type = "oneshot";
-          ExecStart = "${bazelprune}/bin/bazelprune";
+          # Output bases share a dedicated disk with home, so free space there
+          # is the budget. Bases with a live server are never deleted.
+          ExecStart = "${bazelprune}/bin/bazelprune --max-used-percent 70";
         };
       };
       systemd.user.timers.bazelprune = lib.mkIf isLinux {
-        Unit.Description = "Daily bazelprune";
+        Unit.Description = "Hourly bazelprune";
         Timer = {
-          OnCalendar = "daily";
+          OnCalendar = "hourly";
           Persistent = true;
         };
         Install.WantedBy = [ "timers.target" ];

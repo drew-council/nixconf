@@ -46,6 +46,32 @@
             ];
           };
         };
+
+        # Agent worktrees grew GOCACHE from 24 to 54 GiB in two days, faster
+        # than Go's 5-day trim. Go refreshes an entry's mtime on use once it is
+        # an hour old, so mtime is the last use; drop entries unused for a day.
+        # The top level holds README and trim.txt, which Go expects to find.
+        systemd.user.services.go-cache-trim = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+          Unit.Description = "Delete Go build cache entries unused for a day";
+          Service = {
+            Type = "oneshot";
+            ExecStart = toString (
+              pkgs.writeShellScript "go-cache-trim" ''
+                cache=$(${lib.getExe pkgs.go} env GOCACHE)
+                [ -d "$cache" ] || exit 0
+                ${pkgs.findutils}/bin/find "$cache" -mindepth 2 -type f -mmin +1440 -delete
+              ''
+            );
+          };
+        };
+        systemd.user.timers.go-cache-trim = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+          Unit.Description = "Daily Go build cache trim";
+          Timer = {
+            OnCalendar = "daily";
+            Persistent = true;
+          };
+          Install.WantedBy = [ "timers.target" ];
+        };
       };
 
     # With nix.enable off, nix-darwin's nix.gc is unavailable, and

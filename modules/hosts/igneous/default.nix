@@ -120,6 +120,12 @@ in
         # Homarr only needs the Glances v4 API on the LAN.
         services.glances = {
           enable = true;
+          # python-jose is insecure and only backs optional JWT auth, which
+          # glances disables when the module is absent.
+          package = pkgs.glances.overridePythonAttrs (old: {
+            # Match by pname: comparing derivations forces the insecure check.
+            dependencies = builtins.filter (p: (p.pname or "") != "python-jose") old.dependencies;
+          });
           openFirewall = true;
           extraArgs = [
             "--webserver"

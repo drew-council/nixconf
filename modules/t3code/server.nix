@@ -77,6 +77,10 @@
           description = "Headless T3 Code server";
           wantedBy = [ "default.target" ];
           unitConfig.ConditionUser = user.name;
+          # A switch stops changed user units before activation and starts them after.
+          # Stopping this one ends every agent session, including one running the
+          # switch, so nothing starts it again. A new build applies on the next start.
+          restartIfChanged = false;
 
           environment = {
             PATH = lib.mkForce "${user.home}/.local/bin:${user.home}/.nix-profile/bin:/etc/profiles/per-user/${user.name}/bin:/run/current-system/sw/bin:/run/wrappers/bin";

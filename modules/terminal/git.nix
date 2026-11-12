@@ -1,4 +1,4 @@
-{ inputs, ... }:
+{ ... }:
 {
   flake.modules.homeManager.terminal =
     {
@@ -31,60 +31,8 @@
         '';
       };
 
-      weavePackage = inputs.weave.packages.${pkgs.stdenv.hostPlatform.system}.default;
-      weaveExtensions = [
-        "ts"
-        "tsx"
-        "js"
-        "mjs"
-        "cjs"
-        "jsx"
-        "py"
-        "go"
-        "rs"
-        "java"
-        "c"
-        "h"
-        "cpp"
-        "cc"
-        "cxx"
-        "hpp"
-        "hh"
-        "hxx"
-        "rb"
-        "cs"
-        "php"
-        "swift"
-        "ex"
-        "exs"
-        "sh"
-        "f90"
-        "f95"
-        "f03"
-        "f08"
-        "xml"
-        "plist"
-        "svg"
-        "csproj"
-        "fsproj"
-        "vbproj"
-        "json"
-        "yaml"
-        "yml"
-        "toml"
-        "md"
-        "scala"
-        "sc"
-        "sbt"
-        "kojo"
-        "mill"
-        "dart"
-      ];
-      weaveAttributes = map (extension: "*.${extension} merge=weave") weaveExtensions;
     in
     {
-      home.packages = [ weavePackage ];
-
       home.activation.createGitMachineKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         if [ ! -f "${vcs.machineKey}" ]; then
           run mkdir -p -m 700 "${dirOf vcs.machineKey}"
@@ -117,7 +65,6 @@
         in
         {
           enable = true;
-          attributes = weaveAttributes;
           lfs.enable = true;
           # signer defaults to nixpkgs' ssh-keygen
           signing.format = "ssh";
@@ -126,10 +73,6 @@
             # preferences
             init.defaultBranch = "main";
             push.autoSetupRemote = true;
-            merge.weave = {
-              name = "Entity-level semantic merge";
-              driver = "weave-driver %O %A %B %L %P";
-            };
             hook.repo-pre-commit = {
               event = "pre-commit";
               command = lib.getExe preCommitHook;

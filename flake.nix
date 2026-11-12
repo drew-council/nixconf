@@ -51,12 +51,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    weave = {
-      url = "github:ataraxy-labs/weave";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     tdx = {
       url = "github:niklas-heer/tdx";
       inputs.nixpkgs.follows = "nixpkgs";

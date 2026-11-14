@@ -53,6 +53,16 @@
         "claude-haiku-4-5"
       ],
       "modelOrder": []
+    },
+    "codex": {
+      "hiddenModels": [
+        "gpt-6-astra",
+        "gpt-6-sol",
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-5.6-luna"
+      ],
+      "modelOrder": []
     }
   },
   "cloudSpeechCredentials": {
@@ -98,6 +108,16 @@
     },
     "github.com/sheerhealth/pi-sheer": {
       "includeInPullRequestList": true
+    },
+    "8265e3b0-7584-4cb5-8810-d46432c9bc35": {
+      "providerInstances": {
+        "claudeAgent": {
+          "enabled": false
+        },
+        "pi": {
+          "enabled": false
+        }
+      }
     }
   },
   "projectSettingsFolded": true,
@@ -112,7 +132,7 @@
   "providerInstances": {
     "codex": {
       "driver": "codex",
-      "enabled": false
+      "enabled": true
     },
     "pi": {
       "driver": "pi",

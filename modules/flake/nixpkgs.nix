@@ -22,8 +22,6 @@ in
         config = {
           allowUnfree = true;
           nvidia.acceptLicense = true;
-          # logseq hardcodes electron_39.
-          permittedInsecurePackages = [ "electron-39.8.10" ];
         };
         overlays = [
           localPackages

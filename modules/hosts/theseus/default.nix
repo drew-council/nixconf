@@ -14,6 +14,8 @@ in
       "gaming"
       "laptop"
       "work"
+      "ttrpgui"
+      "ttrpgui-remote"
     ];
 
     display = {

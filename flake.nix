@@ -88,6 +88,15 @@
       inputs.treefmt-nix.follows = "treefmt-nix";
     };
 
+    # Not following nixpkgs: the app runs TypeScript on its Electron's bundled
+    # Node, so it keeps the Electron it was tested with and the bun that made
+    # its dependency hash.
+    ttrpgui = {
+      url = "github:drew-council/ttrpgui";
+      inputs.topiary-nushell.follows = "topiary-nushell";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";

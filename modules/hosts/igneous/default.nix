@@ -14,6 +14,8 @@ in
       "gaming"
       "game-mode"
       "work"
+      "ttrpgui"
+      "ttrpgui-display"
     ];
 
     display = {

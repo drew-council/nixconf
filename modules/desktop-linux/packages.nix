@@ -65,8 +65,6 @@
 
         qbittorrent # torrent client
 
-        logseq # markdown note-taking
-
         signal-desktop # signal messenger
       ];
     };

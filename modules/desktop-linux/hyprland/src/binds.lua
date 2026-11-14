@@ -6,30 +6,6 @@ local mod = "SUPER"
 local launcher_timers = {}
 local launcher_armed = false
 
----@enum NavAction
-local NavAction = {
-	Up = 0,
-	Down = 1,
-	Left = 2,
-	Right = 3,
-	Close = 4,
-	NewTab = 5,
-}
-
-local nav_directions = {
-	[NavAction.Up] = "up",
-	[NavAction.Down] = "down",
-	[NavAction.Left] = "left",
-	[NavAction.Right] = "right",
-}
-
-local kitty_nav_keys = {
-	[NavAction.Left] = "h",
-	[NavAction.Right] = "l",
-	[NavAction.Close] = "w",
-	[NavAction.NewTab] = "t",
-}
-
 -- Any action while Super is held turns the launcher gesture into a chord.
 local function bind(keys, dispatcher, opts)
 	return hl.bind(keys, function()
@@ -105,38 +81,6 @@ local function run_workspace_launcher(directives, opts)
 	step()
 end
 
-local function active_window_class()
-	local window = hl.get_active_window()
-	if window == nil then
-		return nil
-	end
-
-	return window.class
-end
-
-local function send_active_keypress(key)
-	local target = "activewindow"
-	hl.dispatch(hl.dsp.send_key_state({ mods = mod, key = key, state = "down", window = target }))
-	hl.dispatch(hl.dsp.send_key_state({ mods = mod, key = key, state = "up", window = target }))
-end
-
-local function navigate(keys, action)
-	return bind(keys, function()
-		local kitty_key = kitty_nav_keys[action]
-		if active_window_class() == "kitty" and kitty_key ~= nil then
-			send_active_keypress(kitty_key)
-			return
-		end
-
-		local direction = nav_directions[action]
-		if direction ~= nil then
-			hl.dispatch(hl.dsp.focus({ direction = direction }))
-		elseif action == NavAction.Close then
-			hl.dispatch(hl.dsp.window.close())
-		end
-	end)
-end
-
 bind_exec(mod .. " + RETURN", defaults.tty)
 bind_exec(mod .. " + E", defaults.fileManager)
 bind_exec(mod .. " + B", defaults.browser)
@@ -160,7 +104,6 @@ end
 if generated.gameMode then
 	bind_exec(mod .. " + SHIFT + G", "game-mode")
 end
-navigate(mod .. " + T", NavAction.NewTab)
 
 hl.bind(mod .. " + SUPER_L", function()
 	launcher_armed = true
@@ -186,20 +129,20 @@ bind_exec(mod .. " + COMMA", "playerctl previous")
 bind_exec(mod .. " + PERIOD", "playerctl next")
 bind_exec(mod .. " + SPACE", "playerctl play-pause")
 
-navigate(mod .. " + W", NavAction.Close)
+bind(mod .. " + W", hl.dsp.window.close())
 bind(mod .. " + SHIFT + W", hl.dsp.window.close())
 bind(mod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 bind(mod .. " + SHIFT + M", hl.dsp.window.fullscreen())
 bind_exec(mod .. " + M", commands.monitorProfileSelector)
 
-navigate(mod .. " + left", NavAction.Left)
-navigate(mod .. " + H", NavAction.Left)
-navigate(mod .. " + right", NavAction.Right)
-navigate(mod .. " + L", NavAction.Right)
-navigate(mod .. " + up", NavAction.Up)
-navigate(mod .. " + K", NavAction.Up)
-navigate(mod .. " + down", NavAction.Down)
-navigate(mod .. " + J", NavAction.Down)
+bind(mod .. " + left", hl.dsp.focus({ direction = "left" }))
+bind(mod .. " + H", hl.dsp.focus({ direction = "left" }))
+bind(mod .. " + right", hl.dsp.focus({ direction = "right" }))
+bind(mod .. " + L", hl.dsp.focus({ direction = "right" }))
+bind(mod .. " + up", hl.dsp.focus({ direction = "up" }))
+bind(mod .. " + K", hl.dsp.focus({ direction = "up" }))
+bind(mod .. " + down", hl.dsp.focus({ direction = "down" }))
+bind(mod .. " + J", hl.dsp.focus({ direction = "down" }))
 
 bind(mod .. " + ALT + left", hl.dsp.window.resize({ x = -80, y = 0, relative = true }))
 bind(mod .. " + ALT + H", hl.dsp.window.resize({ x = -80, y = 0, relative = true }))

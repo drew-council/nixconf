@@ -141,7 +141,6 @@
     {
       home.packages = [
         (pkgs.hypr-monitor-profile.override { inherit profilesJson; })
-        pkgs.kitty-hypr-nav
         pkgs.monitors
         pkgs.switchaudio
         pkgs.tabletdisplay

@@ -3,7 +3,7 @@ let
 in
 {
   flake.modules.homeManager.desktop-linux =
-    { lib, pkgs, ... }:
+    { pkgs, ... }:
     {
       programs.kitty = {
         enable = true;
@@ -52,10 +52,6 @@ in
           "ctrl+shift+t" = "launch --type=tab --cwd=last_reported";
           "ctrl+shift+space" = "send_text all lg\\r";
           "ctrl+shift+b" = "send_text all zig build\\r";
-          "super+t" = "launch --type=tab --cwd=last_reported";
-          "super+h" = "remote_control_script ${lib.getExe pkgs.kitty-hypr-nav} kitty-left";
-          "super+l" = "remote_control_script ${lib.getExe pkgs.kitty-hypr-nav} kitty-right";
-          "super+w" = "remote_control_script ${lib.getExe pkgs.kitty-hypr-nav} kitty-close-tab";
         };
       };
     };

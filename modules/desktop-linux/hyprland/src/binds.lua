@@ -89,6 +89,7 @@ bind_exec(mod .. " + SHIFT + R", commands.voxtype .. " record cancel")
 bind_exec(mod .. " + SHIFT + B", defaults.browser .. " --private-window duckduckgo.com")
 bind_exec(mod .. " + P", "hyprpicker -a")
 bind_exec(mod .. " + EQUAL", defaults.calculator)
+bind_exec(mod .. " + T", "t3code-desktop")
 
 bind_exec(mod .. " + Z", defaults.editor)
 bind_exec(mod .. " + N", defaults.editor .. " " .. defaults.home .. "/nixconf")

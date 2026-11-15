@@ -1049,11 +1049,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794697203,
-        "narHash": "sha256-QUEOGVQ0nUqMnxS5VOROSc0FxBVCtJ4TLOefNO8pCzQ=",
+        "lastModified": 1794704149,
+        "narHash": "sha256-PEf75zdNEBrDv2JpDOI5puQDK0s2c80IKYhHG/eoHOM=",
         "owner": "drew-council",
         "repo": "ttrpgui",
-        "rev": "b7d537858bd2a5cffabaf825a27b08055a79b342",
+        "rev": "23c2ded37982ec61a4b07934c2ff7198ee82805f",
         "type": "github"
       },
       "original": {

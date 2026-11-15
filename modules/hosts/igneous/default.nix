@@ -15,7 +15,7 @@ in
       "game-mode"
       "work"
       "ttrpgui"
-      "ttrpgui-display"
+      "ttrpgui-host"
     ];
 
     display = {

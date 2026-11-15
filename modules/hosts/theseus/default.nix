@@ -15,7 +15,6 @@ in
       "laptop"
       "work"
       "ttrpgui"
-      "ttrpgui-remote"
     ];
 
     display = {

@@ -98,7 +98,7 @@ if generated.gaming then
 		run_workspace_launcher({
 			{ workspace = 2, command = "steam" },
 			{ workspace = 3, command = defaults.browser },
-			{ workspace = 9, command = "vesktop" },
+			{ workspace = 9, command = "discord" },
 		})
 	end)
 end

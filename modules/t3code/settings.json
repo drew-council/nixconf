@@ -108,16 +108,6 @@
     },
     "github.com/sheerhealth/pi-sheer": {
       "includeInPullRequestList": true
-    },
-    "8265e3b0-7584-4cb5-8810-d46432c9bc35": {
-      "providerInstances": {
-        "claudeAgent": {
-          "enabled": false
-        },
-        "pi": {
-          "enabled": false
-        }
-      }
     }
   },
   "projectSettingsFolded": true,

@@ -1071,11 +1071,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1794947292,
-        "narHash": "sha256-D+E/090nj0p0P61NzVNqvm1lw67pIyUp6jXaJKoE/Fc=",
+        "lastModified": 1795016337,
+        "narHash": "sha256-gH7jyowQrvYgWwfnw/sCw2a1nhO2aaFbVIeHsdTu4Mo=",
         "owner": "drew-council",
         "repo": "tuicr",
-        "rev": "8ea52b8d37ab05661367509ccc61ad0b902d2658",
+        "rev": "1a3bdf4977d3612f9e8892546d0ddb7d22726c20",
         "type": "github"
       },
       "original": {

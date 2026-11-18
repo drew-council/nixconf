@@ -24,17 +24,27 @@ comment_types = [
 [forge]
 comment_type_prefix = true
 
-# AI review order + overview for PRs, via Gemini on Vertex AI. The project is
-# pinned (Sheer Health's Vertex project, same as ~/.pi) rather than read from
-# the ADC quota project, which `gcloud auth application-default login` drops
-# when gcloud has no default project.
+# AI review order + overview for PRs. tuicr pipes a JSON request (instructions,
+# PR metadata, patches) to this command and reads a JSON guide from its stdout.
+# The flags after --effort keep `claude -p` lean: no tools, no MCP servers, no
+# saved session, and a one-line system prompt instead of the coding-agent one.
 [review_guide]
-enabled = true
-project = "optimum-nebula-375615"
-model = "gemini-4-argon"
-thinking = "low"
-timeout_secs = 180
-credentials_file = "~/.config/gcloud/application_default_credentials.json"
-# Replaces tuicr's built-in ordering prompt; edit review_guide_prompt.md next
-# to this file. Changing it invalidates cached guides.
-system_prompt_file = "~/.config/tuicr/review_guide_prompt.md"
+command = [
+  "claude",
+  "-p",
+  "--model",
+  "claude-opus-5-5",
+  "--effort",
+  "low",
+  "--system-prompt",
+  "You plan code reviews. The user message is a JSON request. Follow its `instructions` and answer with JSON only.",
+  "--tools",
+  "",
+  "--strict-mcp-config",
+  "--no-session-persistence",
+  "--disable-slash-commands",
+]
+timeout_secs = 120
+# Ordering and style rules; tuicr appends the response format itself.
+# Changing the prompt or the command invalidates cached guides.
+prompt_file = "~/.config/tuicr/review_guide_prompt.md"

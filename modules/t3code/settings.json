@@ -15,6 +15,10 @@
     {
       "provider": "pi",
       "model": "google-vertex/gemini-4-carbon"
+    },
+    {
+      "provider": "pi",
+      "model": "fireworks/accounts/fireworks/routers/deepseek-v4p1-flash-1017-ultrafast"
     }
   ],
   "providerModelPreferences": {
@@ -36,7 +40,8 @@
         "claude-bridge/claude-opus-5",
         "claude-bridge/claude-sonnet-5-5",
         "claude-bridge/claude-sonnet-5",
-        "claude-bridge/claude-haiku-5-5"
+        "claude-bridge/claude-haiku-5-5",
+        "fireworks/accounts/fireworks/models/deepseek-v4p1-flash-1017"
       ],
       "modelOrder": []
     },

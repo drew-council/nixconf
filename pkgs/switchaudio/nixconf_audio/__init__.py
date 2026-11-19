@@ -143,6 +143,15 @@ def set_card_profile(
     run(["pactl", "set-card-profile", card_name, profile_name])
 
 
+def card_profile_sink_name(card_name: str, card_profile: str) -> str | None:
+    """Return the node name PipeWire gives a card profile's sink."""
+    card = card_name.removeprefix("alsa_card.")
+    for part in card_profile.split("+"):
+        if part.startswith("output:"):
+            return f"alsa_output.{card}.{part.removeprefix('output:')}"
+    return None
+
+
 def switch_default_sink_by_alsa_name(
     alsa_name: str,
     *,
@@ -154,9 +163,18 @@ def switch_default_sink_by_alsa_name(
         raise AudioCommandError(
             "card_name and card_profile must be specified together"
         )
+
+    sink = None
     if card_name is not None and card_profile is not None:
         set_card_profile(card_name, card_profile, run=run)
+        # alsa.name is not stable for HDMI: PipeWire replaces it with the
+        # display's name once the display is known.
+        sink_name = card_profile_sink_name(card_name, card_profile)
+        sink = next(
+            (s for s in list_sinks(run=run) if s.name == sink_name), None
+        )
 
-    sink = get_sink_by_alsa_name(alsa_name, run=run)
+    if sink is None:
+        sink = get_sink_by_alsa_name(alsa_name, run=run)
     set_default_sink(sink.id, run=run)
     return sink

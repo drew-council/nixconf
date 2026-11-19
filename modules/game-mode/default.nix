@@ -12,6 +12,7 @@
     let
       inherit (config.my.host.display.gameMode) connector vkDevice;
       user = config.my.user.name;
+      inherit (config.users.users.${user}) home;
       vt = 8;
       width = 3840;
       height = 2160;
@@ -68,29 +69,97 @@
         '';
       };
 
+      # Shared by the root helpers below.
+      sessionLib = ''
+        # Sessions on the game VT. Normally one.
+        game_sessions() {
+          local id
+          while read -r id _; do
+            if [[ $(loginctl show-session "$id" --value --property=VTNr 2>/dev/null) == ${toString vt} ]]; then
+              echo "$id"
+            fi
+          done < <(loginctl list-sessions --no-legend)
+        }
+
+        # Steam's helper processes outlive it, and gamescope waits for them
+        # forever while ignoring SIGTERM. Nothing in the session has state left
+        # to save once Steam is gone.
+        end_game_sessions() {
+          local signal id
+          for signal in SIGTERM SIGKILL; do
+            for id in $(game_sessions); do
+              loginctl kill-session "$id" --signal="$signal" 2>/dev/null || true
+            done
+            for _ in $(seq 15); do
+              [[ -n $(game_sessions) ]] || return 0
+              sleep 0.2
+            done
+          done
+        }
+
+        # -steamos3 persists the steamdeck_stable client channel. Desktop Steam
+        # would see it, switch channels back, and show a beta notice.
+        forget_client_channel() {
+          rm -f ${home}/.local/share/Steam/package/beta
+        }
+
+        # VT of the user's desktop session, else the greeter, else VT 1.
+        desktop_vt() {
+          local id key value target="" greeter=""
+          local -A props
+          while read -r id _; do
+            props=()
+            while IFS='=' read -r key value; do
+              props[$key]=$value
+            done < <(loginctl show-session "$id" -p Name -p Seat -p VTNr -p Type -p Class 2>/dev/null)
+
+            local session_vt=''${props[VTNr]:-0}
+            [[ ''${props[Seat]:-} == seat0 && $session_vt -gt 0 && $session_vt -ne ${toString vt} ]] || continue
+
+            if [[ ''${props[Name]:-} == ${user} && ''${props[Class]:-} == user ]] &&
+              [[ ''${props[Type]:-} == wayland || ''${props[Type]:-} == x11 ]]; then
+              target=$session_vt
+              break
+            fi
+            if [[ ''${props[Class]:-} == greeter ]]; then
+              greeter=$session_vt
+            fi
+          done < <(loginctl list-sessions --no-legend)
+
+          echo "''${target:-''${greeter:-1}}"
+        }
+      '';
+
       # Runs as root: as the session user it would inherit PAMName= and fail to
-      # claim the VT the main process already holds. Steam MUST quit before
-      # gamescope so it can save state; gamescope then exits on its own when its
-      # child is gone.
+      # claim the VT the main process already holds. Steam MUST quit first so it
+      # can save state.
       stopSession = pkgs.writeShellApplication {
         name = "game-mode-stop";
         runtimeInputs = [
           pkgs.coreutils
+          pkgs.kbd
           pkgs.procps
           pkgs.util-linux
+          config.systemd.package
           steam
         ];
         text = ''
+          ${sessionLib}
           if pgrep -u ${user} -x steam >/dev/null; then
             uid=$(id -u ${user})
             timeout 20 setpriv --reuid="$uid" --regid="$(id -g ${user})" --init-groups \
-              env HOME=${config.users.users.${user}.home} USER=${user} LOGNAME=${user} \
+              env HOME=${home} USER=${user} LOGNAME=${user} \
               XDG_RUNTIME_DIR="/run/user/$uid" steam -shutdown || true
+            for _ in $(seq 100); do
+              pgrep -u ${user} -x steam >/dev/null || break
+              sleep 0.2
+            done
           fi
-          for _ in $(seq 50); do
-            kill -0 "''${MAINPID:-0}" 2>/dev/null || exit 0
-            sleep 0.5
-          done
+
+          # Back to the desktop before cleanup, so the console barely shows.
+          chvt "$(desktop_vt)" || true
+          end_game_sessions
+          forget_client_channel
         '';
       };
 
@@ -99,34 +168,15 @@
       returnVt = pkgs.writeShellApplication {
         name = "game-mode-return-vt";
         runtimeInputs = [
-          pkgs.gawk
+          pkgs.coreutils
           pkgs.kbd
           config.systemd.package
         ];
         text = ''
-          target=""
-          greeter=""
-          while read -r id; do
-            unset props
-            declare -A props=()
-            while IFS='=' read -r key value; do
-              props[$key]=$value
-            done < <(loginctl show-session "$id" -p Name -p Seat -p VTNr -p Type -p Class)
-
-            vt=''${props[VTNr]:-0}
-            [[ ''${props[Seat]:-} == seat0 && $vt -gt 0 && $vt -ne ${toString vt} ]] || continue
-
-            if [[ ''${props[Name]:-} == ${user} && ''${props[Class]:-} == user ]] &&
-              [[ ''${props[Type]:-} == wayland || ''${props[Type]:-} == x11 ]]; then
-              target=$vt
-              break
-            fi
-            if [[ ''${props[Class]:-} == greeter ]]; then
-              greeter=$vt
-            fi
-          done < <(loginctl list-sessions --no-legend | awk '{ print $1 }')
-
-          chvt "''${target:-''${greeter:-1}}"
+          ${sessionLib}
+          chvt "$(desktop_vt)" || true
+          end_game_sessions
+          forget_client_channel
         '';
       };
 
@@ -177,6 +227,10 @@
       environment.systemPackages = [ exitGameMode ];
 
       programs.steam.extraPackages = [ steamosShims ];
+
+      # Game mode runs the steamdeck_stable client. Keep desktop Steam on the
+      # same build so switching modes never reinstalls the client.
+      programs.steam.package = pkgs.steam.override { extraArgs = "-clientbeta steamdeck_stable"; };
 
       # gamescope's WSI layer lets games present HDR. It only activates inside
       # gamescope (ENABLE_GAMESCOPE_WSI).
@@ -279,7 +333,7 @@
           ExecStart = lib.getExe session;
           ExecStop = "+${lib.getExe stopSession}";
           ExecStopPost = "+${lib.getExe returnVt}";
-          TimeoutStopSec = 40;
+          TimeoutStopSec = 60;
           Restart = "no";
 
           UtmpIdentifier = tty;

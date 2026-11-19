@@ -68,7 +68,7 @@ def main [--config: path] {
 
   let steam_was_running = steam-running
   if $steam_was_running {
-    ^timeout 20 steam -shutdown o+e> /dev/null
+    ^timeout 20 steam -shutdown | complete | ignore
     if not (wait-until 30sec { not (steam-running) }) {
       notify "Steam did not quit. Game mode not started."
       return
@@ -88,7 +88,10 @@ def main [--config: path] {
   if (wait-until 20sec { gamescope-up $started }) {
     sleep 2sec
     let audio = $cfg.audio
-    ^switchaudio --wait 120 --alsa-name $audio.alsaName --card-name $audio.cardName --card-profile $audio.cardProfile
+    let switched = ^switchaudio --wait 30 --alsa-name $audio.alsaName --card-name $audio.cardName --card-profile $audio.cardProfile | complete
+    if $switched.exit_code != 0 {
+      notify $"TV audio not selected: ($switched.stderr | str trim)"
+    }
   }
 
   wait-until 3650day { (unit-state) not-in ["active" "activating" "deactivating"] } | ignore

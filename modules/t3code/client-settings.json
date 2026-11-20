@@ -33,9 +33,9 @@
   "browserDefaultProfileId": "default",
   "confirmQuit": "hold",
   "confirmThreadArchive": false,
+  "confirmTerminalClose": false,
   "confirmThreadDelete": true,
   "confirmThreadUnpin": false,
-  "confirmTerminalClose": false,
   "diffFilesCollapsed": true,
   "diffIgnoreWhitespace": true,
   "diffLayout": "stacked",
@@ -65,6 +65,7 @@
   "boringSidebarMultilineRows": false,
   "toolCallVisibility": "showAll",
   "screenReaderAnnouncements": "status",
+  "screenReaderWindowTitle": false,
   "threadDetailsUsageEnabled": false,
   "threadDetailsItems": {},
   "sidebarWorkingShelfEnabled": true,
@@ -74,17 +75,29 @@
   "sidebarThreadSortOrder": "updated_at",
   "timestampFormat": "locale",
   "voiceMicrophone": "",
+  "voiceMicrophones": [
+    {
+      "kind": "default"
+    },
+    {
+      "kind": "device",
+      "deviceId": "78591df6ebb36d08fe8f9c200fb92986351fc455a76515248e89ff726ac6fc05",
+      "label": "Yeti Stereo Microphone Analog Stereo"
+    }
+  ],
   "voiceShortcutMode": "auto",
   "speechLanguage": "auto",
   "speechTranslateToEnglish": false,
   "speechCustomWords": [],
   "speechSilenceFiltering": true,
+  "speechStreaming": true,
   "speechRemoveFillerWords": true,
   "speechPostProcessingPrompt": {
     "mode": "default",
     "customInstructions": ""
   },
   "speechCorrectionWord": "",
+  "language": "en",
   "snapShotEnabled": false,
   "snapShotIncludeAccessibility": true,
   "snapShotShortcut": {

@@ -19,20 +19,6 @@ _: super: {
       package;
   tuicr = inputs.tuicr.packages.${super.stdenv.hostPlatform.system}.default;
 
-  # YTM's new player bar breaks the PlayerAPI hook, so 2.0.12 hangs on the
-  # loading screen: https://github.com/ytmdesktop/ytmdesktop/issues/1819
-  # These are the 2.0.12-based fixes from upstream's fixes/YTMD-Hook-PlayerRename
-  # branch. Remove once nixpkgs ships 2.1.0 or later.
-  ytmdesktop = super.ytmdesktop.overrideAttrs (oldAttrs: {
-    patches = (oldAttrs.patches or [ ]) ++ [
-      (super.fetchpatch {
-        name = "ytmdesktop-fix-player-hook.patch";
-        url = "https://github.com/ytmdesktop/ytmdesktop/compare/178681e4107aa5b5482c958358f144e5d8f06b80...43842976906e7f1cf90c201c24e2ffdc6ca9ad7f.patch";
-        hash = "sha256-yxJsYLHoSt79b3vdqhok7GPJSijGxYvDiKv0ofrw9Xc=";
-      })
-    ];
-  });
-
   # Upstream serializes every mutation across a clone, so commands on
   # independent stacks in different worktrees cannot run at the same time:
   # https://github.com/github/gh-stack/issues/568

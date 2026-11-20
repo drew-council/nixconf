@@ -19,7 +19,9 @@
       refresh = 120;
       unit = "game-mode.service";
       tty = "tty${toString vt}";
-      steam = config.programs.steam.package;
+      # gamescope writes each screenshot to a path Steam picks under /tmp, so
+      # Steam MUST see the host's /tmp to read it back.
+      steam = config.programs.steam.package.override { privateTmp = false; };
 
       gamescopeArgs = [
         "--prefer-output"
@@ -47,11 +49,23 @@
         "--steam"
       ];
 
+      # The client is the process that holds Steam's state. Steam's launcher
+      # and helpers are also named "steam" or outlive it, so only this check
+      # says whether Steam has quit. Steam's own launcher script uses it too.
+      steamClientLib = ''
+        steam_client_alive() {
+          local pid
+          pid=$(cat ${home}/.steam/steam.pid 2>/dev/null) || return 1
+          [[ $pid =~ ^[0-9]+$ && $(cat "/proc/$pid/comm" 2>/dev/null) == steam ]]
+        }
+      '';
+
       session = pkgs.writeShellApplication {
         name = "game-mode-session";
         runtimeInputs = [
           pkgs.coreutils
           pkgs.gamescope
+          pkgs.procps
           steam
         ];
         # Steam reads the display's native mode from the EDID gamescope writes.
@@ -64,6 +78,16 @@
           export GAMESCOPE_PATCHED_EDID_FILE="$state/edid.bin"
           mkdir -p "$state"
           touch "$GAMESCOPE_MODE_SAVE_FILE" "$GAMESCOPE_PATCHED_EDID_FILE"
+
+          ${steamClientLib}
+          # gamescope exits when Steam's whole process tree is gone. If Steam
+          # crashes or quits on its own, its crash report uploader keeps that
+          # tree alive for minutes with nothing on screen.
+          (
+            while sleep 3 && kill -0 $$ 2>/dev/null; do
+              steam_client_alive || pkill -u ${user} -x steamerrorrepor || true
+            done
+          ) &
 
           exec gamescope ${lib.escapeShellArgs gamescopeArgs} -- steam -gamepadui -steamos3
         '';
@@ -81,9 +105,8 @@
           done < <(loginctl list-sessions --no-legend)
         }
 
-        # Steam's helper processes outlive it, and gamescope waits for them
-        # forever while ignoring SIGTERM. Nothing in the session has state left
-        # to save once Steam is gone.
+        # Steam's helper processes outlive it, and gamescope waits for them.
+        # Nothing in the session has state left to save once the client is gone.
         end_game_sessions() {
           local signal id
           for signal in SIGTERM SIGKILL; do
@@ -101,6 +124,11 @@
         # would see it, switch channels back, and show a beta notice.
         forget_client_channel() {
           rm -f ${home}/.local/share/Steam/package/beta
+        }
+
+        # The switch can block while the game session still holds the VT.
+        return_to_desktop() {
+          timeout 5 chvt "$(desktop_vt)" || true
         }
 
         # VT of the user's desktop session, else the greeter, else VT 1.
@@ -145,19 +173,21 @@
         ];
         text = ''
           ${sessionLib}
-          if pgrep -u ${user} -x steam >/dev/null; then
+          ${steamClientLib}
+          # -shutdown would start a new Steam if no client were running.
+          if steam_client_alive; then
             uid=$(id -u ${user})
             timeout 20 setpriv --reuid="$uid" --regid="$(id -g ${user})" --init-groups \
               env HOME=${home} USER=${user} LOGNAME=${user} \
-              XDG_RUNTIME_DIR="/run/user/$uid" steam -shutdown || true
-            for _ in $(seq 100); do
-              pgrep -u ${user} -x steam >/dev/null || break
+              XDG_RUNTIME_DIR="/run/user/$uid" steam -shutdown >/dev/null 2>&1 || true
+            for _ in $(seq 150); do
+              steam_client_alive || break
               sleep 0.2
             done
           fi
 
           # Back to the desktop before cleanup, so the console barely shows.
-          chvt "$(desktop_vt)" || true
+          return_to_desktop
           end_game_sessions
           forget_client_channel
         '';
@@ -174,7 +204,7 @@
         ];
         text = ''
           ${sessionLib}
-          chvt "$(desktop_vt)" || true
+          return_to_desktop
           end_game_sessions
           forget_client_channel
         '';
@@ -333,15 +363,16 @@
           ExecStart = lib.getExe session;
           ExecStop = "+${lib.getExe stopSession}";
           ExecStopPost = "+${lib.getExe returnVt}";
-          TimeoutStopSec = 60;
+          TimeoutStopSec = 90;
           Restart = "no";
 
+          # No TTYReset=, TTYVHangup=, or TTYVTDisallocate=: systemd applies
+          # them before every command, ExecStop= included. That resets the VT
+          # under the running gamescope and kills the session before Steam can
+          # quit. logind restores the VT when the session ends.
           UtmpIdentifier = tty;
           UtmpMode = "user";
           TTYPath = "/dev/${tty}";
-          TTYReset = true;
-          TTYVHangup = true;
-          TTYVTDisallocate = true;
           StandardInput = "tty-fail";
           StandardOutput = "journal";
           StandardError = "journal";

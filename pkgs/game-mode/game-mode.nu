@@ -6,7 +6,7 @@
 const unit = "game-mode.service"
 
 def notify [body: string] {
-  ^notify-send "game-mode" $body
+  ^notify-send "game-mode" $body | complete | ignore
 }
 
 def wait-until [timeout: duration check: closure]: nothing -> bool {
@@ -18,12 +18,65 @@ def wait-until [timeout: duration check: closure]: nothing -> bool {
   false
 }
 
-def steam-running []: nothing -> bool {
-  (^pgrep -u $env.USER -x steam | complete).exit_code == 0
+# The client is the process that holds Steam's state. This is the check
+# Steam's own launcher script uses.
+def steam-client-running []: nothing -> bool {
+  try {
+    let pid = open --raw ($env.HOME | path join ".steam" "steam.pid") | str trim
+    $pid =~ '^[0-9]+$' and (open --raw $"/proc/($pid)/comm" | str trim) == "steam"
+  } catch {
+    false
+  }
+}
+
+# Steam's launcher, client, and helpers. The launcher and helpers outlive the
+# client by minutes, so "has Steam quit" MUST NOT wait on them.
+def steam-processes []: nothing -> list<int> {
+  let steam_dir = $env.HOME | path join ".local" "share" "Steam"
+  let procs = ^ps -u $env.USER -o pid=,ppid=,comm=,exe=
+    | complete
+    | get stdout
+    | lines
+    | parse --regex '^\s*(?<pid>\d+)\s+(?<ppid>\d+)\s+(?<comm>\S+)\s+(?<exe>.*)$'
+    | update pid { into int }
+    | update ppid { into int }
+
+  let roots = $procs
+    | where {|p| $p.comm == "steam" or ($p.exe | str starts-with $"($steam_dir)/") }
+    | get pid
+
+  # Add every descendant of a root.
+  generate {|found|
+    let more = $procs | where {|p| $p.ppid in $found and $p.pid not-in $found } | get pid
+    if ($more | is-empty) { {out: $found} } else { {next: ($found ++ $more)} }
+  } $roots
+  | last
+  | default []
+}
+
+def signal-steam [signal: string] {
+  for pid in (steam-processes) {
+    ^kill $"-($signal)" $pid | complete | ignore
+  }
+}
+
+# Quit desktop Steam and leave no process of it behind. Game mode runs its own
+# Steam, and two cannot share the install.
+def stop-steam [] {
+  if (steam-client-running) {
+    try { ^timeout 20 steam -shutdown o+e> /dev/null }
+    wait-until 30sec { not (steam-client-running) } | ignore
+  }
+
+  signal-steam "TERM"
+  if not (wait-until 10sec { steam-processes | is-empty }) {
+    signal-steam "KILL"
+    wait-until 5sec { steam-processes | is-empty } | ignore
+  }
 }
 
 def unit-state []: nothing -> string {
-  ^systemctl show --property ActiveState --value $unit | str trim
+  ^systemctl show --property ActiveState --value $unit | complete | get stdout | str trim
 }
 
 def connector-connected [connector: string]: nothing -> bool {
@@ -48,14 +101,16 @@ def active-monitor-profile []: nothing -> string {
 
 def restore [steam_was_running: bool] {
   # Re-applying the profile also switches audio back.
-  ^hypr-monitor-profile (active-monitor-profile)
+  ^timeout 30 hypr-monitor-profile (active-monitor-profile) | complete | ignore
   if $steam_was_running {
-    ^setsid -f steam -silent o+e> /dev/null
+    try { ^setsid -f steam -silent o+e> /dev/null }
   }
 }
 
 def main [--config: path] {
   let cfg = open $config
+  # Steam's sandbox fails to start from a directory it cannot see.
+  cd $env.HOME
 
   if (unit-state) in ["active" "activating" "deactivating"] {
     notify "Game mode is already running."
@@ -66,14 +121,9 @@ def main [--config: path] {
     return
   }
 
-  let steam_was_running = steam-running
-  if $steam_was_running {
-    ^timeout 20 steam -shutdown | complete | ignore
-    if not (wait-until 30sec { not (steam-running) }) {
-      notify "Steam did not quit. Game mode not started."
-      return
-    }
-  }
+  let steam_was_running = steam-client-running
+  if $steam_was_running { notify "Closing Steam, then starting game mode." }
+  stop-steam
 
   let started = date now
   let start = ^systemctl start $unit | complete

@@ -14,8 +14,9 @@ in
     in
     {
       terminal =
-        { config, ... }:
+        { config, lib, ... }:
         {
+          home.sessionVariables.T3CODE_TERMINAL_SHELL = lib.getExe config.programs.nushell.package;
           # Out-of-store links keep the files writable, so edits made in the T3 Code UI land in this repo.
           home.file = {
             ".t3/userdata/settings.json".source = liveLink config ./settings.json;

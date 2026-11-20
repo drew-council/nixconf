@@ -82,7 +82,9 @@
           # switch, so nothing starts it again. A new build applies on the next start.
           restartIfChanged = false;
 
+          # User units do not read home-manager session variables.
           environment = {
+            T3CODE_TERMINAL_SHELL = lib.getExe pkgs.nushell;
             PATH = lib.mkForce "${user.home}/.local/bin:${user.home}/.nix-profile/bin:/etc/profiles/per-user/${user.name}/bin:/run/current-system/sw/bin:/run/wrappers/bin";
           };
 

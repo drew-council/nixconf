@@ -115,7 +115,6 @@
         nix-search-cli # search nixpkgs from the CLI
         nil # Nix language server
         nixd # Nix language server
-        cachix # binary cache client
         nixProjectGenerator # new project template (`new-repo`)
       ];
 
@@ -144,7 +143,7 @@
 
       programs.nh = {
         enable = true;
-        package = pkgs.nh-cachix;
+        package = pkgs.nh;
       };
     };
 }

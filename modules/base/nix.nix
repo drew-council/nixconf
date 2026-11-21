@@ -27,7 +27,7 @@ in
       # Preserve root-level scheduled cleanup without installing nh into the system
       # profile; Home Manager owns the interactive command and default flake.
       programs.nh = {
-        package = pkgs.nh-cachix;
+        package = pkgs.nh;
         clean.enable = true;
         clean.extraArgs = "--keep-since 10d";
       };

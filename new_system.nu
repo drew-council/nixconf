@@ -146,13 +146,6 @@ def "main configure" [] {
     say $"atuin setup skipped: ($err.msg)"
   }
 
-  say "setting up cachix"
-  try {
-    read "op://Private/cachix-personal/credential" | cachix authtoken --stdin
-  } catch {|err|
-    say $"cachix setup skipped: ($err.msg)"
-  }
-
   say "setting up zed"
   clone-if-missing ($nu.home-dir | path join ".config" "zed") "git@github.com:drew-council/zed.git"
 

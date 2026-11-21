@@ -105,7 +105,13 @@
     in
     {
       # Darwin-aware: retrieves secrets during HM activation, no systemd.
-      imports = [ inputs.opnix.homeManagerModules.default ];
+      # Keyed so other features (home-lan) can import opnix too.
+      imports = [
+        {
+          key = "opnix-home-manager";
+          imports = [ inputs.opnix.homeManagerModules.default ];
+        }
+      ];
 
       # NOTE: keep this module a single attrset with mkIf guards. Splitting
       # platform-specific definitions into `// lib.optionalAttrs` attrsets is a

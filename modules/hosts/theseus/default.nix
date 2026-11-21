@@ -62,6 +62,13 @@ in
 
         services.fwupd.enable = true;
 
+        # Travels, so read the tungsten cache over the tailnet.
+        # Pushes are presigned for the LAN address, so skip them.
+        my.nixCache = {
+          url = "http://truenas-scale:5751";
+          push = false;
+        };
+
         # Keep encrypted SSDs fast under Docker/build churn: pass TRIM and skip dm-crypt queues.
         boot.initrd.luks.devices."luks-2bf7370e-9689-4cf5-908b-f409a55ae9ce" = {
           allowDiscards = true;

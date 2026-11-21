@@ -27,6 +27,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Client for the binary cache on tungsten (tungsten-config services/nix-cache).
+    # Not pinned to the server's version: the client falls back for older servers.
+    niks3 = {
+      url = "github:Mic92/niks3";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
     catppuccin = {
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";

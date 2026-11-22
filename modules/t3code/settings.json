@@ -82,15 +82,6 @@
         "icon": "configure",
         "runOnWorktreeCreate": true
       }
-    ],
-    "72d36ff6-8801-421d-a5f3-553332b475e2": [
-      {
-        "id": "pnpm-install-2",
-        "name": "pnpm install",
-        "command": "pnpm install",
-        "icon": "play",
-        "runOnWorktreeCreate": true
-      }
     ]
   },
   "defaultModelSelection": {
@@ -122,28 +113,6 @@
     },
     "github.com/sheerhealth/pi-sheer": {
       "includeInPullRequestList": true
-    },
-    "72d36ff6-8801-421d-a5f3-553332b475e2": {
-      "defaultModelSelection": {
-        "instanceId": "claudeAgent",
-        "model": "claude-opus-5-5",
-        "options": [
-          {
-            "id": "effort",
-            "value": "high"
-          }
-        ]
-      },
-      "defaultThreadEnvMode": "worktree",
-      "defaultProjectScripts": [
-        {
-          "id": "pnpm-install-2",
-          "name": "pnpm install",
-          "command": "pnpm install",
-          "icon": "play",
-          "runOnWorktreeCreate": true
-        }
-      ]
     }
   },
   "projectSettingsFolded": true,

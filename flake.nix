@@ -21,9 +21,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # secrets management through 1Password
-    opnix = {
-      url = "github:brizzbuzz/opnix";
+    # age-encrypted secrets in ./secrets, decrypted on activation
+    agenix = {
+      url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

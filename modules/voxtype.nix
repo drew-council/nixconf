@@ -1,6 +1,6 @@
-{ inputs, ... }:
+# Dictation for desktops with a microphone in use.
 {
-  flake.modules.homeManager.desktop =
+  flake.modules.homeManager.voxtype =
     {
       config,
       lib,
@@ -22,14 +22,14 @@
           pkgs.wl-clipboard
         ];
         text = ''
-          # Read opnix's raw credential at runtime, never into the Nix store.
+          # Read the agenix-decrypted credential at runtime, never into the Nix store.
           # Control commands must still work if the credential is unavailable.
           case "''${1:-daemon}" in
             record|status|config|--help|--version) ;;
             *)
-              key_file=${lib.escapeShellArg config.programs.onepassword-secrets.secretPaths.voxtypeOpenai}
+              key_file=${lib.escapeShellArg config.age.secrets.voxtype-openai.path}
               if [[ ! -r "$key_file" ]]; then
-                echo "Voxtype: missing $key_file; activate Home Manager with opnix configured." >&2
+                echo "Voxtype: missing $key_file; check the agenix user service." >&2
                 exit 1
               fi
               VOXTYPE_WHISPER_API_KEY=$(< "$key_file")
@@ -104,35 +104,23 @@
       };
     in
     {
-      # Darwin-aware: retrieves secrets during HM activation, no systemd.
-      # Keyed so other features (home-lan) can import opnix too.
-      imports = [
-        {
-          key = "opnix-home-manager";
-          imports = [ inputs.opnix.homeManagerModules.default ];
-        }
-      ];
-
       # NOTE: keep this module a single attrset with mkIf guards. Splitting
       # platform-specific definitions into `// lib.optionalAttrs` attrsets is a
       # trap: `//` is a shallow merge, so a block defining `home.packages` clobbers
       # every other `home.*` definition (home.file, sessionVariables, ...).
 
-      programs.onepassword-secrets = {
-        enable = true;
-        tokenFile = "/etc/opnix-token";
-
-        secrets.voxtypeOpenai = {
-          reference = "op://opnix/openai-personal/credential";
-          path = "${config.xdg.configHome}/voxtype/openai-api-key";
-          mode = "0600";
-        };
+      age.secrets.voxtype-openai = {
+        file = ../secrets/voxtype-openai.age;
+        path = "${config.xdg.configHome}/voxtype/openai-api-key";
       };
+
+      # The wrapper exits when the key is missing, so decrypt first.
+      systemd.user.services.voxtype.Unit.After = lib.mkIf isLinux [ "agenix.service" ];
 
       # Linux gets its config from the HM systemd service module
       # (services.voxtype.settings). Since 1.1.0 the cask reads ~/.config/voxtype/
       # on macOS too; Application Support is only a fallback when that directory
-      # is missing, and opnix always creates it for the API key.
+      # is missing, and agenix always creates it for the API key.
       xdg.configFile."voxtype/config.toml" = lib.mkIf isDarwin {
         source = (pkgs.formats.toml { }).generate "voxtype-config.toml" darwinSettings;
       };

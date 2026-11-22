@@ -7,6 +7,7 @@
       "terminal"
       "desktop"
       "desktop-macos"
+      "voxtype"
       "work"
     ];
 

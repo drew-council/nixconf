@@ -3,12 +3,6 @@ let
   # niks3 binary cache on tungsten (tungsten-config services/nix-cache).
   nixCachePublicKey = "tungsten-nix-cache-1:xDf2GoqcK1M0Qd8PgghmO/PeOepTVUjIcEADqpc+Mig=";
   nixCacheTokenPath = "niks3/auth-token";
-
-  # Same key as in desktop/voxtype.nix, so hosts with both import opnix once.
-  opnixHomeModule = {
-    key = "opnix-home-manager";
-    imports = [ inputs.opnix.homeManagerModules.default ];
-  };
 in
 {
   flake.modules.nixos.home-lan =
@@ -82,18 +76,14 @@ in
       cfg = osConfig.my.nixCache;
     in
     {
-      imports = [ opnixHomeModule ];
-
       config = lib.mkIf cfg.push {
         # Home Manager writes the token; the root upload daemon reads it.
-        programs.onepassword-secrets = {
-          enable = true;
-          tokenFile = "/etc/opnix-token";
-          secrets.niks3Token = {
-            reference = "op://opnix/tungsten-nix-cache/credential";
-            path = "${config.xdg.configHome}/${nixCacheTokenPath}";
-            mode = "0600";
-          };
+        # A real file, not a link into the user runtime directory,
+        # so the daemon can read it while the user is logged out.
+        age.secrets.niks3-token = {
+          file = ../secrets/niks3-token.age;
+          path = "${config.xdg.configHome}/${nixCacheTokenPath}";
+          symlink = false;
         };
 
         # Client for manual push, pins and gc.

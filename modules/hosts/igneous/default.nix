@@ -11,6 +11,7 @@ in
       "terminal"
       "desktop"
       "desktop-linux"
+      "voxtype"
       "gaming"
       "game-mode"
       "work"

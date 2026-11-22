@@ -84,8 +84,10 @@ end
 bind_exec(mod .. " + RETURN", defaults.tty)
 bind_exec(mod .. " + E", defaults.fileManager)
 bind_exec(mod .. " + B", defaults.browser)
-bind_exec(mod .. " + R", commands.voxtype .. " record toggle")
-bind_exec(mod .. " + SHIFT + R", commands.voxtype .. " record cancel")
+if commands.voxtype then
+	bind_exec(mod .. " + R", commands.voxtype .. " record toggle")
+	bind_exec(mod .. " + SHIFT + R", commands.voxtype .. " record cancel")
+end
 bind_exec(mod .. " + SHIFT + B", defaults.browser .. " --private-window duckduckgo.com")
 bind_exec(mod .. " + P", "hyprpicker -a")
 bind_exec(mod .. " + EQUAL", defaults.calculator)

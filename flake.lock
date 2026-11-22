@@ -1,5 +1,25 @@
 {
   "nodes": {
+    "agenix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792507013,
+        "narHash": "sha256-8tKjSQajD3mUND1GaAuaWTcuyUpgcGsh5V+l4ibzC7U=",
+        "owner": "ryantm",
+        "repo": "agenix",
+        "rev": "5e5b88a0c8e56f291a108c2fe9934054d9745b2e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ryantm",
+        "repo": "agenix",
+        "type": "github"
+      }
+    },
     "agent-artifacts": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -286,7 +306,7 @@
     },
     "flake-utils_5": {
       "inputs": {
-        "systems": "systems_7"
+        "systems": "systems_8"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -305,24 +325,6 @@
     "flake-utils_6": {
       "inputs": {
         "systems": "systems_9"
-      },
-      "locked": {
-        "lastModified": 1731533236,
-        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
-    "flake-utils_7": {
-      "inputs": {
-        "systems": "systems_10"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -704,29 +706,9 @@
         "type": "github"
       }
     },
-    "opnix": {
-      "inputs": {
-        "flake-utils": "flake-utils_5",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1787059804,
-        "narHash": "sha256-Tz5sPFmT3KGCU7qPpJw0AWHydbxizztvJv3Wdwwl9aI=",
-        "owner": "brizzbuzz",
-        "repo": "opnix",
-        "rev": "0ea3a9e6a94fdd0c444aa7729b98e568a0588222",
-        "type": "github"
-      },
-      "original": {
-        "owner": "brizzbuzz",
-        "repo": "opnix",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
+        "agenix": "agenix",
         "agent-artifacts": "agent-artifacts",
         "catppuccin": "catppuccin",
         "flake-parts": "flake-parts",
@@ -743,8 +725,7 @@
         "nix-project-generator": "nix-project-generator",
         "nixpkgs": "nixpkgs_2",
         "nixvim": "nixvim",
-        "opnix": "opnix",
-        "systems": "systems_8",
+        "systems": "systems_7",
         "t3code": "t3code",
         "tdx": "tdx",
         "topiary-nushell": "topiary-nushell",
@@ -787,21 +768,6 @@
       }
     },
     "systems_10": {
-      "locked": {
-        "lastModified": 1681028828,
-        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
-        "owner": "nix-systems",
-        "repo": "default",
-        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-systems",
-        "repo": "default",
-        "type": "github"
-      }
-    },
-    "systems_11": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
@@ -892,6 +858,18 @@
       }
     },
     "systems_7": {
+      "flake": false,
+      "locked": {
+        "path": "./flake.systems.nix",
+        "type": "path"
+      },
+      "original": {
+        "path": "./flake.systems.nix",
+        "type": "path"
+      },
+      "parent": []
+    },
+    "systems_8": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
@@ -905,18 +883,6 @@
         "repo": "default",
         "type": "github"
       }
-    },
-    "systems_8": {
-      "flake": false,
-      "locked": {
-        "path": "./flake.systems.nix",
-        "type": "path"
-      },
-      "original": {
-        "path": "./flake.systems.nix",
-        "type": "path"
-      },
-      "parent": []
     },
     "systems_9": {
       "locked": {
@@ -956,7 +922,7 @@
     },
     "tdx": {
       "inputs": {
-        "flake-utils": "flake-utils_6",
+        "flake-utils": "flake-utils_5",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -1063,7 +1029,7 @@
     },
     "ttrpgui": {
       "inputs": {
-        "flake-utils": "flake-utils_7",
+        "flake-utils": "flake-utils_6",
         "nixpkgs": "nixpkgs_3",
         "topiary-nushell": [
           "topiary-nushell"
@@ -1111,7 +1077,7 @@
     },
     "utils": {
       "inputs": {
-        "systems": "systems_11"
+        "systems": "systems_10"
       },
       "locked": {
         "lastModified": 1731533236,

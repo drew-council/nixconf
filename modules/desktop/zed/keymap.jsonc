@@ -1,0 +1,28 @@
+[
+  {
+    "bindings": {
+      "alt-h": "workspace::ActivatePaneLeft",
+      "alt-j": "workspace::ActivatePaneDown",
+      "alt-k": "workspace::ActivatePaneUp",
+      "alt-l": "workspace::ActivatePaneRight",
+      "ctrl-b": "workspace::ToggleLeftDock",
+      "ctrl-shift-escape": "workspace::ToggleZoom",
+      "ctrl-shift-e": "project_panel::ToggleFocus",
+      "shift-escape": null,
+      "ctrl-shift-space": ["task::Spawn", { "task_name": "lazygit" }],
+      "ctrl-right": "pane::SplitRight",
+      "ctrl-left": "pane::SplitLeft",
+      "ctrl-up": "pane::SplitUp",
+      "ctrl-down": "pane::SplitDown",
+      "ctrl-q": "pane::CloseActiveItem"
+    }
+  },
+  {
+    "context": "Editor && edit_prediction",
+    "bindings": {
+      "alt-tab": "editor::AcceptEditPrediction",
+      "alt-l": null,
+      "tab": null
+    }
+  }
+]

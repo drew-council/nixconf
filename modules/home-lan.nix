@@ -75,20 +75,31 @@ in
       config,
       lib,
       osConfig,
+      pkgs,
       ...
     }:
+    let
+      cfg = osConfig.my.nixCache;
+    in
     {
       imports = [ opnixHomeModule ];
 
-      # Home Manager writes the token; the root upload daemon reads it.
-      config.programs.onepassword-secrets = lib.mkIf osConfig.my.nixCache.push {
-        enable = true;
-        tokenFile = "/etc/opnix-token";
-        secrets.niks3Token = {
-          reference = "op://opnix/tungsten-nix-cache/credential";
-          path = "${config.xdg.configHome}/${nixCacheTokenPath}";
-          mode = "0600";
+      config = lib.mkIf cfg.push {
+        # Home Manager writes the token; the root upload daemon reads it.
+        programs.onepassword-secrets = {
+          enable = true;
+          tokenFile = "/etc/opnix-token";
+          secrets.niks3Token = {
+            reference = "op://opnix/tungsten-nix-cache/credential";
+            path = "${config.xdg.configHome}/${nixCacheTokenPath}";
+            mode = "0600";
+          };
         };
+
+        # Client for manual push, pins and gc.
+        # It reads the token from its default path, the one above.
+        home.packages = [ inputs.niks3.packages.${pkgs.stdenv.hostPlatform.system}.niks3 ];
+        home.sessionVariables.NIKS3_SERVER_URL = cfg.url;
       };
     };
 }

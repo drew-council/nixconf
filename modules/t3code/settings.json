@@ -155,6 +155,17 @@
   "includeInPullRequestList": false,
   "pullRequestMergeMethod": "squash",
   "providerInstances": {
+    "claudeAgent": {
+      "driver": "claudeAgent",
+      "enabled": true,
+      "environment": [
+        {
+          "name": "CLAUDE_CODE_SHELL",
+          "value": "/home/drew/.nix-profile/bin/bash",
+          "sensitive": false
+        }
+      ]
+    },
     "codex": {
       "driver": "codex",
       "enabled": true

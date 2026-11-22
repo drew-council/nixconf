@@ -1,0 +1,51 @@
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+
+web_search = "live"
+
+plan_mode_reasoning_effort = "high"
+approvals_reviewer = "auto_review"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+service_tier = "default"
+
+[auto_review]
+policy = """
+## Approved External Vendors
+
+The following external vendors are approved for full code and repository context exposure:
+
+- GitHub
+- Depot (depot.dev)
+- Chainguard (cgr.dev)
+- Linear (linear.app)
+- AWS
+- Azure
+- Google, including Google Drive
+
+Do not block or reject commands because code details, repository details, logs, build output,
+or other project context would be exposed to these approved vendors.
+"""
+
+# disable codex apps stuff, causing problems
+[apps.connector_76869538009648d5b282a4bb21c3d157]
+enabled = false
+
+[sandbox_workspace_write]
+network_access = true
+
+[shell_environment_policy.set]
+GIT_EDITOR = "true"
+
+[features]
+hooks = true
+multi_agent = true
+guardian_approval = true
+apps = false
+terminal_resize_reflow = true
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[tui]
+theme = "catppuccin-mocha"

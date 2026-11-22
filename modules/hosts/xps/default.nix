@@ -31,6 +31,10 @@
           config.environment.etc."systemd/logind.conf".source
         ];
 
+        # Pull-only: Hermes has full access to this machine,
+        # and the cache signs whatever a token holder uploads.
+        my.nixCache.push = false;
+
         users.users.${config.my.user.name}.openssh.authorizedKeys.keys = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINPILydKagpHBNoXFBEcUxqf4wFZDD6GRY09FGfLt/EH"
         ];

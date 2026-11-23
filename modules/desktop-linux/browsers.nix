@@ -8,7 +8,6 @@
     {
       environment.systemPackages = with pkgs; [
         inputs.zen-browser.packages.${system}.default # preferred browser
-        inputs.helium-browser.packages.${system}.default # privacy-focused chromium fork
         google-chrome
         agent-browser # browser automation CLI for AI agents
       ];

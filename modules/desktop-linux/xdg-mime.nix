@@ -8,7 +8,7 @@
         enable = true;
         defaultApplications =
           let
-            browser = "zen-beta.desktop";
+            browser = "helium.desktop";
             fileManager = "org.kde.dolphin.desktop";
             editor = "dev.zed.Zed.desktop";
             imageViewer = "feh.desktop";

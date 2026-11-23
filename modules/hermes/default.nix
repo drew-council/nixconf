@@ -92,6 +92,8 @@
         serviceConfig = {
           ExecStartPre = "${pkgs.coreutils}/bin/install -d -m 700 ${browserProfile}";
           ExecStart = "${lib.getExe pkgs.chromium} --headless=new --remote-debugging-address=127.0.0.1 --remote-debugging-port=${toString browserPort} --user-data-dir=${browserProfile} --password-store=basic --no-first-run --no-default-browser-check about:blank";
+          # Helium's policies force-install extensions into Chromium too.
+          InaccessiblePaths = [ "-/etc/chromium/policies" ];
           User = user;
           Group = "users";
           WorkingDirectory = home;

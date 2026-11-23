@@ -87,7 +87,7 @@
         nvidia = builtins.elem "nvidia" config.my.host.features;
         gameMode = builtins.elem "game-mode" config.my.host.features;
         defaults = {
-          browser = "zen-beta";
+          browser = "helium";
           calculator = "qalculate-qt";
           editor = "zeditor --new";
           fileManager = "dolphin";

@@ -13,7 +13,7 @@
 
       home = {
         sessionVariables = {
-          BROWSER = "zen-beta";
+          BROWSER = "helium";
           GTK_USE_PORTAL = "1";
           HYPRSHOT_DIR = "${config.my.user.home}/Pictures/screenshots";
         };

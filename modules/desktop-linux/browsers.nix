@@ -7,7 +7,7 @@
     in
     {
       environment.systemPackages = with pkgs; [
-        inputs.zen-browser.packages.${system}.default # preferred browser
+        inputs.zen-browser.packages.${system}.default
         google-chrome
         agent-browser # browser automation CLI for AI agents
       ];

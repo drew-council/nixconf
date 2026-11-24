@@ -23,16 +23,17 @@ _: super: {
   # independent stacks in different worktrees cannot run at the same time:
   # https://github.com/github/gh-stack/issues/568
   # https://github.com/github/gh-stack/issues/570
-  # This fork is upstream main (0.3.0) plus one commit that lifts that.
+  # The fork's drew/local-patches branch is the 0.3.0 release plus a commit that
+  # lifts that.
   # Remove it once a release closes both issues. A clone MUST NOT be used by
   # this build and an upstream one at once.
   gh-stack = super.gh-stack.overrideAttrs (_: {
-    version = "0.3.0-unstable-2026-11-10";
+    version = "0.3.0-unstable-2026-11-24";
     src = super.fetchFromGitHub {
       owner = "drew-council";
       repo = "gh-stack";
-      rev = "3218bab49fe5682283358660f5c2ecf21d0d9229";
-      hash = "sha256-j+dSuG6jCRLb3HH5x7g52vWCfyA/C7G7zi7qQxy3n08=";
+      rev = "314ea27eb0ac92ab7598fdae3e4293eef7d7c86f";
+      hash = "sha256-GMqKdLSmmcVXnwXWIJnGCbazhGhHeIzk6TzbJ1sduwQ=";
     };
     vendorHash = "sha256-y+eTfmZTdSkHh943o/XtFrrMWv/lxvWekKUp/JKb0h4=";
     # The repo's CI test runner is a main package and would install as `test`.

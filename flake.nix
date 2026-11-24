@@ -69,6 +69,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    gh-stack = {
+      url = "github:drew-council/gh-stack/drew/local-patches";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     gh-stack-tui = {
       url = "github:drew-council/gh-stack-tui";
       inputs.nixpkgs.follows = "nixpkgs";

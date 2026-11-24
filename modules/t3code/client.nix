@@ -22,6 +22,7 @@ in
             ".t3/userdata/settings.json".source = liveLink config ./settings.json;
             ".t3/userdata/client-settings.json".source = liveLink config ./client-settings.json;
             ".t3/userdata/keybindings.json".source = liveLink config ./keybindings.json;
+            ".t3/userdata/themes".source = liveLink config ./themes;
           };
         };
 

@@ -60,6 +60,12 @@ hl.config({
 		no_update_news = true,
 		no_donation_nag = true,
 	},
+	render = {
+		-- Hyprland 0.57 advertises HDR to any fullscreen window.
+		-- Chromium accepts it even for SDR video,
+		-- and the resulting HDR modeset blacks out the monitor.
+		cm_auto_hdr = 0,
+	},
 	misc = {
 		disable_hyprland_logo = true,
 		middle_click_paste = false,

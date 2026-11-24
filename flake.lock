@@ -394,11 +394,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795538819,
-        "narHash": "sha256-Te5m/2CWGjLBX+EfwB52WI+UuAsrT4rScrIHcmD117I=",
+        "lastModified": 1795551321,
+        "narHash": "sha256-qa3LCIhESPK/4/lvDr5QCS2c4ZWX1XDiiU6iVoyyVu8=",
         "owner": "drew-council",
         "repo": "gh-stack",
-        "rev": "cc420d5d83f6a62559923af361490274eba59eef",
+        "rev": "3bb683454de1d5dfa0a36961d1a23be93b76a688",
         "type": "github"
       },
       "original": {

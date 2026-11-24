@@ -75,6 +75,62 @@ def stop-steam [] {
   }
 }
 
+# Replace a library's prefix directory with a link to the shared one.
+# Fails if a prefix exists in both.
+def link-prefixes [dir: path shared: path] {
+  if ($dir | path type) == "dir" {
+    for prefix in (ls --all $dir | get --optional name | default []) {
+      let target = $shared | path join ($prefix | path basename)
+      if ($prefix | path expand) == ($target | path expand) {
+        rm $prefix
+      } else if not ($target | path exists --no-symlink) {
+        # Copy under a temporary name, so a failed copy leaves no half prefix.
+        let staging = $shared | path join $".incoming-($prefix | path basename)"
+        rm --recursive --force $staging
+        ^cp --archive --no-target-directory $prefix $staging
+        mv $staging $target
+        rm --recursive --force $prefix
+      }
+    }
+    ^rmdir $dir
+  }
+  ^ln --symbolic --no-target-directory $shared $dir
+}
+
+# Game mode keeps every game's Proton prefix in Steam's default library.
+# Desktop Steam keeps it in the library the game is installed to.
+# So every other library's prefix directory MUST be a link to the default one,
+# or the two modes run each game with separate saves.
+# Steam MUST NOT be running. Returns the libraries that could not be linked.
+def share-prefixes []: nothing -> list<string> {
+  let steamapps = $env.HOME | path join ".local" "share" "Steam" "steamapps"
+  let shared = $steamapps | path join "compatdata"
+  let libraries = try {
+    open --raw ($steamapps | path join "libraryfolders.vdf")
+    | parse --regex '"path"\s+"(?<path>[^"]+)"'
+    | get path
+  } catch {
+    []
+  }
+
+  mut split = []
+  for library in $libraries {
+    let dir = $library | path join "steamapps" "compatdata"
+    let mounted = $library | path join "steamapps" | path exists
+    if $mounted and ($dir | path expand) != ($shared | path expand) {
+      let linked = try {
+        mkdir $shared
+        link-prefixes $dir $shared
+        true
+      } catch {
+        false
+      }
+      if not $linked { $split ++= [$library] }
+    }
+  }
+  $split
+}
+
 def unit-state []: nothing -> string {
   ^systemctl show --property ActiveState --value $unit | complete | get stdout | str trim
 }
@@ -125,6 +181,10 @@ def main [--config: path] {
   if $steam_was_running { notify "Closing Steam, then starting game mode." }
   stop-steam
 
+  let split = share-prefixes
+  let split_warning = $"Saves differ between game mode and desktop for games in: ($split | str join ', ')"
+  if ($split | is-not-empty) { notify $split_warning }
+
   let started = date now
   let start = ^systemctl start $unit | complete
   if $start.exit_code != 0 {
@@ -146,4 +206,6 @@ def main [--config: path] {
 
   wait-until 3650day { (unit-state) not-in ["active" "activating" "deactivating"] } | ignore
   restore $steam_was_running
+  # Repeat the warning now that the desktop is on screen.
+  if ($split | is-not-empty) { notify $split_warning }
 }

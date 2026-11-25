@@ -17,8 +17,8 @@
       "model": "fireworks/accounts/fireworks/routers/deepseek-v4p1-flash-1017-ultrafast"
     },
     {
-      "provider": "pi",
-      "model": "google-vertex/gemini-4-neon"
+      "provider": "antigravity",
+      "model": "gemini-4-neon"
     }
   ],
   "providerModelPreferences": {
@@ -41,7 +41,11 @@
         "claude-bridge/claude-sonnet-5-5",
         "claude-bridge/claude-sonnet-5",
         "claude-bridge/claude-haiku-5-5",
-        "fireworks/accounts/fireworks/models/deepseek-v4p1-flash-1017"
+        "fireworks/accounts/fireworks/models/deepseek-v4p1-flash-1017",
+        "google-vertex/gemini-4-argon",
+        "google-vertex/gemini-4-carbon",
+        "google-vertex/gemini-4-hydrogen",
+        "google-vertex/gemini-4-neon"
       ],
       "modelOrder": []
     },
@@ -66,6 +70,22 @@
         "gpt-5.6-sol",
         "gpt-5.6-terra",
         "gpt-5.6-luna"
+      ],
+      "modelOrder": []
+    },
+    "antigravity": {
+      "hiddenModels": [
+        "gemini-4-argon",
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-medium",
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-low",
+        "gemini-3.1-pro-low-thinking",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-3-flash-preview",
+        "gemini-pro-orchestrator"
       ],
       "modelOrder": []
     }
@@ -107,9 +127,9 @@
           "runOnWorktreeCreate": true
         }
       ],
-      "includeInPullRequestList": true,
       "branchNamingMode": "static",
-      "branchNamePrefix": "drew"
+      "branchNamePrefix": "drew",
+      "includeInPullRequestList": true
     },
     "github.com/sheerhealth/pi-sheer": {
       "includeInPullRequestList": true
@@ -121,19 +141,18 @@
   "linkedEnvironmentsEnabled": true,
   "defaultThreadEnvMode": "local",
   "branchNamePrefix": "drew",
-  "includeInPullRequestList": false,
   "pullRequestMergeMethod": "squash",
   "providerInstances": {
     "claudeAgent": {
       "driver": "claudeAgent",
-      "enabled": true,
       "environment": [
         {
           "name": "CLAUDE_CODE_SHELL",
           "value": "/home/drew/.nix-profile/bin/bash",
           "sensitive": false
         }
-      ]
+      ],
+      "enabled": true
     },
     "codex": {
       "driver": "codex",

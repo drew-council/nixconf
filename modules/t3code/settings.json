@@ -147,6 +147,15 @@
         "launchArgs": "--model google-vertex/gemini-4-argon --thinking high",
         "autoUsesExtensionReview": true
       }
+    },
+    "antigravity": {
+      "driver": "antigravity",
+      "enabled": true,
+      "config": {
+        "authMethod": "agent-platform",
+        "gcpProject": "optimum-nebula-375615",
+        "gcpLocation": "global"
+      }
     }
   }
 }

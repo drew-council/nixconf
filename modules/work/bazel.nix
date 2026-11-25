@@ -120,6 +120,12 @@
         # for the 14d default (the Bazel 9 upgrade left ~55 GB). A dropped repo is
         # re-extracted from the repository cache, mostly without the network.
         common --repo_contents_cache_gc_max_age=7d
+
+        # Run sheer's Go tests on SQLite instead of the Spanner emulator.
+        # This replaces the bare SH_TEST_DB in sheer's .bazelrc,
+        # so setting SH_TEST_DB in the shell has no effect.
+        # To run one command on the emulator, pass --test_env=SH_TEST_DB=
+        test --test_env=SH_TEST_DB=sqlite
       ''
       # NixOS lacks the FHS layout the repo's toolchains assume. Together with
       # the shebangs in nixos.work above (which provide /bin/bash and

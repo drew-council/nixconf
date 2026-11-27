@@ -36,6 +36,17 @@
     }
   },
   "agent": {
+    "tool_permissions": {
+      "tools": {
+        "terminal": {
+          "always_allow": [
+            {
+              "pattern": "^python\\b"
+            }
+          ]
+        }
+      }
+    },
     "dock": "right",
     "favorite_models": [
       {
@@ -44,16 +55,16 @@
         "enable_thinking": false
       }
     ],
-    "default_profile": "write",
+    "default_profile": "ask",
     "inline_assistant_model": {
       "provider": "zed.dev",
       "model": "gpt-5.5"
     },
     "default_model": {
-      "effort": "high",
+      "effort": "medium",
       "enable_thinking": true,
-      "provider": "zed.dev",
-      "model": "claude-sonnet-4-6"
+      "provider": "openai-subscribed",
+      "model": "gpt-6.2-sol"
     }
   },
 

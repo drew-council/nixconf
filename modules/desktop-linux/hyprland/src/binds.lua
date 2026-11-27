@@ -22,6 +22,11 @@ local function bind_exec(keys, command, opts)
 	bind(keys, hl.dsp.exec_cmd(command), opts)
 end
 
+-- Opens a Quickshell picker centered on the focused monitor.
+local function picker(kind)
+	return "qs -c bar ipc call picker toggle " .. kind
+end
+
 local function workspace_is_empty(workspace)
 	return workspace == nil or #workspace:get_windows() == 0
 end
@@ -50,7 +55,7 @@ local function open_launcher_on_empty_desktop()
 	end
 
 	if workspace_is_empty(monitor.active_workspace) and workspace_is_empty(monitor.active_special_workspace) then
-		hl.dispatch(hl.dsp.exec_cmd("fuzzel"))
+		hl.dispatch(hl.dsp.exec_cmd(picker("apps")))
 	end
 end
 
@@ -113,7 +118,7 @@ hl.bind(mod .. " + SUPER_L", function()
 end, { non_consuming = true })
 hl.bind(mod .. " + SUPER_L", function()
 	if launcher_armed then
-		hl.dispatch(hl.dsp.exec_cmd("fuzzel"))
+		hl.dispatch(hl.dsp.exec_cmd(picker("apps")))
 	end
 	launcher_armed = false
 end, { release = true })
@@ -125,7 +130,7 @@ hl.define_submap("launcher-guard", function()
 end)
 
 hl.bind("mouse:273", open_launcher_on_empty_desktop, { click = true, non_consuming = true })
-bind_exec(mod .. " + V", "cliphist list | fuzzel --dmenu | cliphist decode | wl-copy")
+bind_exec(mod .. " + V", picker("clipboard"))
 bind_exec(mod .. " + SLASH", "bemoji -t")
 
 bind_exec(mod .. " + COMMA", "playerctl previous")
@@ -136,7 +141,7 @@ bind(mod .. " + W", hl.dsp.window.close())
 bind(mod .. " + SHIFT + W", hl.dsp.window.close())
 bind(mod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 bind(mod .. " + SHIFT + M", hl.dsp.window.fullscreen())
-bind_exec(mod .. " + M", commands.monitorProfileSelector)
+bind_exec(mod .. " + M", picker("monitors"))
 
 bind(mod .. " + left", hl.dsp.focus({ direction = "left" }))
 bind(mod .. " + H", hl.dsp.focus({ direction = "left" }))

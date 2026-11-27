@@ -20,12 +20,18 @@ PanelWindow {
         spacing: 4
 
         BarButton {
+            id: launcher
             text: ""
             textColor: Theme.blue
             font.pixelSize: 16
             padding: 8
             tooltip: "Open application launcher"
-            onClicked: Quickshell.execDetached(["fuzzel"])
+            onClicked: Pickers.toggle("apps", launcher)
+
+            PickerPopup {
+                anchorItem: launcher
+                kind: "apps"
+            }
         }
 
         Workspaces {}
@@ -56,9 +62,15 @@ PanelWindow {
         spacing: 4
 
         BarButton {
+            id: monitorButton
             text: "󰍹"
             tooltip: "Switch monitor profile"
-            onClicked: Quickshell.execDetached(["hypr-monitor-profile"])
+            onClicked: Pickers.toggle("monitors", monitorButton)
+
+            PickerPopup {
+                anchorItem: monitorButton
+                kind: "monitors"
+            }
         }
 
         Audio {}

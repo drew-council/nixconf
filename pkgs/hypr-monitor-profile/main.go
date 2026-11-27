@@ -29,15 +29,22 @@ type config struct {
 
 func main() {
 	profilesJSON := flag.String("profiles-json", "", "JSON file describing available monitor profiles")
+	list := flag.Bool("list", false, "print profile labels, one per line")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: hypr-monitor-profile --profiles-json FILE [LABEL]\n\nWithout LABEL, pick a profile in fuzzel.")
+		fmt.Fprintln(os.Stderr, "Usage: hypr-monitor-profile --profiles-json FILE [--list | LABEL]\n\nWithout LABEL, pick a profile in fuzzel.")
 	}
 	flag.Parse()
-	if *profilesJSON == "" || flag.NArg() > 1 {
+	if *profilesJSON == "" || flag.NArg() > 1 || *list && flag.NArg() > 0 {
 		flag.Usage()
 		os.Exit(2)
 	}
-	if err := run(*profilesJSON, flag.Arg(0)); err != nil {
+	var err error
+	if *list {
+		err = printLabels(*profilesJSON)
+	} else {
+		err = run(*profilesJSON, flag.Arg(0))
+	}
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "hypr-monitor-profile:", err)
 		os.Exit(1)
 	}
@@ -75,6 +82,14 @@ func run(profilesJSON, label string) error {
 	log.Printf("selected %s", label)
 	setTabletHeadless(cfg.Profiles[i].UseTablet, cfg.TabletHeadlessName)
 	return queueRequest(runtimeDir(), label)
+}
+
+func printLabels(profilesJSON string) error {
+	cfg, err := loadConfig(profilesJSON)
+	for _, p := range cfg.Profiles {
+		fmt.Println(p.Label)
+	}
+	return err
 }
 
 func loadConfig(path string) (config, error) {

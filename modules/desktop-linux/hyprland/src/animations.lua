@@ -25,3 +25,11 @@ hl.animation({ leaf = "layersOut", enabled = true, speed = 1.5, bezier = "linear
 hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 1.79, bezier = "almostLinear" })
 hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 1.39, bezier = "almostLinear" })
 hl.animation({ leaf = "workspaces", enabled = false, speed = 1.94, bezier = "almostLinear", style = "fade" })
+-- Popup fades ignore layer rules, so the bar's picker popups need this off.
+hl.animation({ leaf = "fadePopups", enabled = false })
+
+hl.layer_rule({
+	name = "quickshell-picker-no-anim",
+	match = { namespace = "^quickshell-picker$" },
+	no_anim = true,
+})

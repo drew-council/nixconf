@@ -32,7 +32,7 @@ BarButton {
 
     onClicked: button => {
         if (button === Qt.LeftButton)
-            Quickshell.execDetached(["switchaudio"]);
+            Pickers.toggle("audio", root);
         else if (button === Qt.RightButton)
             Quickshell.execDetached(["pavucontrol"]);
     }
@@ -46,5 +46,10 @@ BarButton {
 
     PwObjectTracker {
         objects: [root.sink, root.source]
+    }
+
+    PickerPopup {
+        anchorItem: root
+        kind: "audio"
     }
 }

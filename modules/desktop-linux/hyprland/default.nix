@@ -25,7 +25,6 @@
         blueman # blueman-manager, opened from the bar
         pavucontrol # audio mixer
         libnotify # send desktop notifications
-        hyprpolkitagent # polkit authentication prompts
         wl-clipboard # clipboard CLI
         wtype # simulate keyboard input
         wev # show input events

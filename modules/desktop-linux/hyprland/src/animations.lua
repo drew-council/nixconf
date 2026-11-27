@@ -30,6 +30,6 @@ hl.animation({ leaf = "fadePopups", enabled = false })
 
 hl.layer_rule({
 	name = "quickshell-overlay-no-anim",
-	match = { namespace = "^quickshell-(picker|notifications|osd)$" },
+	match = { namespace = "^quickshell-(picker|notifications|osd|polkit)$" },
 	no_anim = true,
 })

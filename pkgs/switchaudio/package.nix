@@ -1,27 +1,20 @@
 {
-  makeWrapper,
-  symlinkJoin,
-  writeTextDir,
-  writers,
+  buildGo126Module,
+  lib,
 }:
-let
-  sharedPythonLib = writeTextDir "lib/nixconf_audio/__init__.py" (
-    builtins.readFile ./nixconf_audio/__init__.py
-  );
-  rawScript = writers.writePython3Bin "switchaudio" {
-    libraries = [ ];
-  } (builtins.readFile ./main.py);
-in
-symlinkJoin {
-  name = "switchaudio";
-  paths = [
-    rawScript
-    sharedPythonLib
-  ];
-  nativeBuildInputs = [ makeWrapper ];
-  meta.mainProgram = "switchaudio";
-  postBuild = ''
-    wrapProgram "$out/bin/switchaudio" \
-      --prefix PYTHONPATH : "$out/lib"
-  '';
+
+# pactl, wpctl, and fuzzel come from the ambient PATH,
+# so they match the running PipeWire and the user's fuzzel.
+buildGo126Module {
+  pname = "switchaudio";
+  version = "0.1.0";
+
+  src = ./.;
+  vendorHash = null;
+
+  meta = {
+    description = "Switch the default PipeWire sink by ALSA name or from a fuzzel picker";
+    license = lib.licenses.mit;
+    mainProgram = "switchaudio";
+  };
 }

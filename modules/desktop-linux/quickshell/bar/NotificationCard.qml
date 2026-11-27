@@ -8,7 +8,7 @@ Rectangle {
     id: root
 
     required property Notification notification
-    readonly property bool hovered: mouse.containsMouse
+    readonly property bool hovered: hover.hovered
     readonly property bool critical: notification?.urgency === NotificationUrgency.Critical
     readonly property var actions: notification?.actions.filter(a => a.identifier !== "default") ?? []
     readonly property string iconSource: {
@@ -30,10 +30,14 @@ Rectangle {
     border.width: 1
     border.color: critical ? Theme.red : hovered ? Theme.accent : Theme.surface0
 
+    // Text and buttons inside the card take hover from a MouseArea,
+    // so the border and toast timer would flicker. HoverHandler is passive.
+    HoverHandler {
+        id: hover
+    }
+
     MouseArea {
-        id: mouse
         anchors.fill: parent
-        hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         onClicked: event => {
             if (event.button === Qt.MiddleButton) {
@@ -144,7 +148,7 @@ Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.margins: 10
-        visible: root.hovered || closeMouse.containsMouse
+        visible: root.hovered
         text: ""
         color: closeMouse.containsMouse ? Theme.red : Theme.overlay1
         font.family: Theme.font

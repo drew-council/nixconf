@@ -44,7 +44,8 @@ PanelWindow {
 
                 Timer {
                     running: !toast.hovered && !toast.critical
-                    interval: toast.modelData.expireTimeout > 0 ? toast.modelData.expireTimeout * 1000 : 6000
+                    // expireTimeout is in milliseconds, despite the docs saying seconds.
+                    interval: toast.modelData.expireTimeout > 0 ? toast.modelData.expireTimeout : 6000
                     onTriggered: Notifs.hidePopup(toast.modelData)
                 }
 

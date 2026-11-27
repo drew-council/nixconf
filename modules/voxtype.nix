@@ -137,6 +137,11 @@
               "wtype"
               "clipboard"
             ];
+            # The Quickshell bar shows recording state instead.
+            notification = sharedSettings.output.notification // {
+              on_recording_start = false;
+              on_recording_stop = false;
+            };
           };
         };
       };

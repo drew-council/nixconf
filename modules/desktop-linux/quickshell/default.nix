@@ -1,6 +1,11 @@
 {
   flake.modules.homeManager.desktop-linux =
-    { lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       tailscaleStatus = pkgs.writeShellApplication {
         name = "bar-tailscale-status";
@@ -36,6 +41,8 @@
         substituteInPlace $out/EmojiProvider.qml \
           --replace-fail "@emojiTest@" "${pkgs.unicode-emoji}/share/unicode/emoji/emoji-test.txt" \
           --replace-fail "@wtype@" "${lib.getExe pkgs.wtype}"
+        substituteInPlace $out/Dictation.qml \
+          --replace-fail "@voxtype@" "${lib.optionalString config.services.voxtype.enable (lib.getExe config.services.voxtype.package)}"
       '';
     in
     {

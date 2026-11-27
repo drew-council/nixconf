@@ -61,6 +61,8 @@ PanelWindow {
         height: parent.height
         spacing: 4
 
+        Dictation {}
+
         BarButton {
             id: monitorButton
             text: "󰍹"

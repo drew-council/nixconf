@@ -17,6 +17,7 @@ Singleton {
             apps: apps,
             clipboard: clipboard,
             audio: audio,
+            emoji: emoji,
             monitors: monitors
         })
     readonly property var provider: providers[kind] ?? null
@@ -56,5 +57,9 @@ Singleton {
 
     MonitorProvider {
         id: monitors
+    }
+
+    EmojiProvider {
+        id: emoji
     }
 }

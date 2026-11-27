@@ -131,7 +131,7 @@ end)
 
 hl.bind("mouse:273", open_launcher_on_empty_desktop, { click = true, non_consuming = true })
 bind_exec(mod .. " + V", picker("clipboard"))
-bind_exec(mod .. " + SLASH", "bemoji -t")
+bind_exec(mod .. " + SLASH", picker("emoji"))
 
 bind_exec(mod .. " + COMMA", "playerctl previous")
 bind_exec(mod .. " + PERIOD", "playerctl next")

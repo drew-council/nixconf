@@ -28,7 +28,6 @@
         hyprpolkitagent # polkit authentication prompts
         wl-clipboard # clipboard CLI
         wtype # simulate keyboard input
-        bemoji # emoji picker
         wev # show input events
         cliphist # clipboard history
       ];

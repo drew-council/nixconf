@@ -15,7 +15,7 @@ ShellRoot {
         }
     }
 
-    // qs -c bar ipc call picker toggle <apps|clipboard|audio|monitors>
+    // qs -c bar ipc call picker toggle <apps|clipboard|audio|monitors|emoji>
     IpcHandler {
         target: "picker"
 

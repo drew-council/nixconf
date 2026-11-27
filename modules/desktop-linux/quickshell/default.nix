@@ -33,6 +33,9 @@
         chmod -R u+w $out
         substituteInPlace $out/Tailscale.qml \
           --replace-fail "@tailscaleStatus@" "${lib.getExe tailscaleStatus}"
+        substituteInPlace $out/EmojiProvider.qml \
+          --replace-fail "@emojiTest@" "${pkgs.unicode-emoji}/share/unicode/emoji/emoji-test.txt" \
+          --replace-fail "@wtype@" "${lib.getExe pkgs.wtype}"
       '';
     in
     {

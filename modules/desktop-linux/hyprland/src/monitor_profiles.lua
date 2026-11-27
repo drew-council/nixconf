@@ -124,15 +124,6 @@ local function is_valid_profile_label(label)
 	return label == default_label or profiles_by_label()[label] ~= nil
 end
 
-local function profile_labels()
-	local labels = { default_label }
-	for label, _ in pairs(profiles_by_label()) do
-		table.insert(labels, label)
-	end
-	table.sort(labels)
-	return labels
-end
-
 local function default_enabled_outputs()
 	local outputs = {}
 	for _, key in ipairs(monitor_names()) do
@@ -301,34 +292,6 @@ function M.apply_profile(label)
 	save_state()
 	settle_monitor_layout()
 	switch_audio(profile)
-end
-
-function M.choose_profile()
-	local labels = profile_labels()
-	local result = util.capture(
-		"printf %s "
-			.. util.shell_quote(util.join_lines(labels))
-			.. " | fuzzel --dmenu --index --prompt "
-			.. util.shell_quote("Monitors> ")
-	)
-	if result == nil or result == "" then
-		return
-	end
-
-	local index = tonumber(result:match("%d+"))
-	if index == nil then
-		util.notify("hyprmonitor", "fuzzel returned a non-numeric selection")
-		return
-	end
-
-	local selected = labels[index + 1]
-	if selected ~= nil then
-		M.apply_profile(selected)
-	end
-end
-
-function M.choose_profile_command()
-	return generated.commands.monitorProfileSelector
 end
 
 local function poll_profile_request()

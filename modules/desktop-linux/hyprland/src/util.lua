@@ -5,25 +5,6 @@ function M.shell_quote(value)
 	return "'" .. str:gsub("'", [['"'"']]) .. "'"
 end
 
-function M.join_lines(items)
-	return table.concat(items, "\n")
-end
-
-function M.capture(command)
-	local handle = io.popen(command)
-	if handle == nil then
-		return nil
-	end
-
-	local output = handle:read("*a")
-	local ok = handle:close()
-	if not ok then
-		return nil
-	end
-
-	return output
-end
-
 function M.run(command)
 	os.execute(command)
 end

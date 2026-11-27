@@ -96,7 +96,6 @@
         commands = {
           kwalletInit = "${pkgs.kdePackages.kwallet-pam}/libexec/pam_kwallet_init";
           monitorLayoutPoke = lib.getExe monitorLayoutPoke;
-          monitorProfileSelector = "hypr-monitor-profile";
           switchaudio = lib.getExe pkgs.switchaudio;
         }
         // lib.optionalAttrs config.services.voxtype.enable {

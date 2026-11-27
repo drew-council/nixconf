@@ -13,7 +13,6 @@ local startup_commands = {
 	generated.commands.kwalletInit,
 	"qs -c bar",
 	"systemctl --user start hyprpolkitagent",
-	"swaync",
 	"wl-paste --type text --watch cliphist store",
 	"wl-paste --type image --watch cliphist store",
 	"udiskie",

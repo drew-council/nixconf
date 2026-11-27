@@ -46,8 +46,10 @@ Scope {
             Connections {
                 target: dialog.flow
                 ignoreUnknownSignals: true
+                // Submitting clears isResponseRequired; only a new prompt ends the wait.
                 function onIsResponseRequiredChanged() {
-                    dialog.submitting = false;
+                    if (dialog.flow.isResponseRequired)
+                        dialog.submitting = false;
                 }
                 function onAuthenticationFailed() {
                     dialog.submitting = false;
@@ -117,6 +119,9 @@ Scope {
                             anchors.rightMargin: 12
                             verticalAlignment: TextInput.AlignVCenter
                             echoMode: dialog.flow?.responseVisible ? TextInput.Normal : TextInput.Password
+                            // The default dot fills a monospace cell, so the dots run together.
+                            passwordCharacter: "•"
+                            font.letterSpacing: echoMode === TextInput.Password ? 3 : 0
                             enabled: !dialog.submitting
                             focus: true
                             color: Theme.text
@@ -131,7 +136,8 @@ Scope {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: dialog.submitting ? "Checking…" : (dialog.flow?.inputPrompt || "Password").replace(/:\s*$/, "")
                                 color: Theme.overlay1
-                                font: input.font
+                                font.family: Theme.font
+                                font.pixelSize: Theme.fontSize + 1
                             }
                         }
                     }
@@ -168,8 +174,9 @@ Scope {
                                 implicitWidth: label.implicitWidth + 24
                                 implicitHeight: 30
                                 radius: 8
-                                color: modelData.primary ? (mouse.containsMouse ? Qt.lighter(Theme.accent, 1.1) : Theme.accent) : (mouse.containsMouse ? Theme.surface1 : Theme.surface0)
-                                opacity: modelData.primary && dialog.submitting ? 0.5 : 1
+                                color: modelData.primary ? (mouse.containsMouse && !disabled ? Qt.lighter(Theme.accent, 1.1) : Theme.accent) : (mouse.containsMouse ? Theme.surface1 : Theme.surface0)
+                                readonly property bool disabled: modelData.primary && dialog.submitting
+                                opacity: disabled ? 0.4 : 1
 
                                 Text {
                                     id: label
@@ -184,6 +191,7 @@ Scope {
                                 MouseArea {
                                     id: mouse
                                     anchors.fill: parent
+                                    enabled: !parent.disabled
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: parent.modelData.primary ? dialog.submit() : dialog.flow.cancelAuthenticationRequest()

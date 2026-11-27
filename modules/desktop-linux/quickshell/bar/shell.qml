@@ -30,6 +30,8 @@ ShellRoot {
 
     Toasts {}
 
+    Osd {}
+
     LazyLoader {
         active: Pickers.provider !== null && Pickers.anchor === null
 

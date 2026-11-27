@@ -79,6 +79,10 @@ PanelWindow {
 
         Tailscale {}
 
+        NetworkButton {}
+
+        BluetoothButton {}
+
         Tray {
             anchors.verticalCenter: parent.verticalCenter
             barWindow: bar

@@ -16,8 +16,6 @@ local startup_commands = {
 	"wl-paste --type text --watch cliphist store",
 	"wl-paste --type image --watch cliphist store",
 	"udiskie",
-	"nm-applet",
-	"blueman-applet",
 	"1password --silent",
 	"pcloud",
 	systemd_env

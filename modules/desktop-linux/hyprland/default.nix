@@ -21,8 +21,8 @@
         playerctl # media key control
         brightnessctl # backlight control
         udiskie # removable drive automounter
-        networkmanagerapplet # network tray applet
-        blueman # bluetooth manager
+        networkmanagerapplet # nm-connection-editor, opened from the bar
+        blueman # blueman-manager, opened from the bar
         pavucontrol # audio mixer
         libnotify # send desktop notifications
         hyprpolkitagent # polkit authentication prompts

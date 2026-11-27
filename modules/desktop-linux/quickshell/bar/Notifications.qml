@@ -7,9 +7,6 @@ BarButton {
     id: root
 
     readonly property int count: Notifs.history.length
-    // When the panel last closed. Clicking the bell to close it also
-    // dismisses the grab, and that same click must not reopen it.
-    property real closedAt: 0
 
     text: (Notifs.dnd ? "" : "") + (count > 0 ? ` <font color="${Theme.red}"><sup>${count}</sup></font>` : "")
     textFormat: Text.StyledText
@@ -18,126 +15,58 @@ BarButton {
 
     onClicked: button => {
         if (button === Qt.LeftButton) {
-            if (!panel.visible && Date.now() - closedAt < 250)
-                return;
-            panel.visible = !panel.visible;
+            panel.toggle();
             // The panel shows everything, so toasts would only duplicate it.
             if (panel.visible)
                 Notifs.popups = [];
-        }
-        else if (button === Qt.RightButton)
+        } else if (button === Qt.RightButton) {
             Notifs.dnd = !Notifs.dnd;
+        }
     }
 
-    PopupWindow {
+    BarPanel {
         id: panel
+        owner: root
+        title: "Notifications"
+        contentHeight: Math.max(list.contentHeight, 60)
 
-        // Hang from the bar's bottom-right corner, lined up with the toasts.
-        anchor.window: root.QsWindow.window
-        anchor.rect.x: (anchor.window?.width ?? 0) - 8
-        anchor.rect.y: anchor.window?.height ?? 0
-        anchor.gravity: Edges.Bottom | Edges.Left
-        anchor.margins.top: 8
-        // The compositor hides a grabbing popup on any outside click.
-        grabFocus: true
-        onVisibleChanged: {
-            if (!visible)
-                root.closedAt = Date.now();
-        }
-        color: "transparent"
-        implicitWidth: 400
-        implicitHeight: Math.min(header.height + Math.max(list.contentHeight, 60) + 32, 600)
+        actions: [
+            PanelAction {
+                text: Notifs.dnd ? "" : ""
+                active: Notifs.dnd
+                onClicked: Notifs.dnd = !Notifs.dnd
+            },
+            PanelAction {
+                visible: root.count > 0
+                text: "Clear"
+                hoverColor: Theme.red
+                onClicked: Notifs.clear()
+            }
+        ]
 
-        Rectangle {
+        ListView {
+            id: list
             anchors.fill: parent
-            color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.94)
-            border.color: Theme.accent
-            border.width: 2
-            radius: 12
-
-            Item {
-                id: header
-                x: 14
-                y: 10
-                width: parent.width - 28
-                height: 28
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Notifications"
-                    color: Theme.text
-                    font.family: Theme.font
-                    font.pixelSize: Theme.fontSize + 1
-                    font.bold: true
-                }
-
-                Row {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 14
-
-                    Text {
-                        text: Notifs.dnd ? "" : ""
-                        color: Notifs.dnd ? Theme.accent : Theme.overlay1
-                        font.family: Theme.font
-                        font.pixelSize: Theme.fontSize
-
-                        MouseArea {
-                            anchors.fill: parent
-                            anchors.margins: -4
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Notifs.dnd = !Notifs.dnd
-                        }
-                    }
-
-                    Text {
-                        visible: root.count > 0
-                        text: "Clear"
-                        color: clearMouse.containsMouse ? Theme.red : Theme.overlay1
-                        font.family: Theme.font
-                        font.pixelSize: Theme.fontSize
-
-                        MouseArea {
-                            id: clearMouse
-                            anchors.fill: parent
-                            anchors.margins: -4
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Notifs.clear()
-                        }
-                    }
-                }
+            clip: true
+            spacing: 8
+            boundsBehavior: Flickable.StopAtBounds
+            model: ScriptModel {
+                values: Notifs.history
             }
 
-            ListView {
-                id: list
-                anchors.top: header.bottom
-                anchors.topMargin: 8
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 12
-                x: 12
-                width: parent.width - 24
-                clip: true
-                spacing: 8
-                boundsBehavior: Flickable.StopAtBounds
-                model: ScriptModel {
-                    values: Notifs.history
-                }
+            delegate: NotificationCard {
+                required property Notification modelData
+                notification: modelData
+                width: list.width
+            }
 
-                delegate: NotificationCard {
-                    required property Notification modelData
-                    notification: modelData
-                    width: list.width
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    visible: root.count === 0
-                    text: "No notifications"
-                    color: Theme.overlay1
-                    font.family: Theme.font
-                    font.pixelSize: Theme.fontSize
-                }
+            Text {
+                anchors.centerIn: parent
+                visible: root.count === 0
+                text: "No notifications"
+                color: Theme.overlay1
+                font.family: Theme.font
+                font.pixelSize: Theme.fontSize
             }
         }
     }

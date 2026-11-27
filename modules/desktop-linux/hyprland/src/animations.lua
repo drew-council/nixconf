@@ -29,7 +29,7 @@ hl.animation({ leaf = "workspaces", enabled = false, speed = 1.94, bezier = "alm
 hl.animation({ leaf = "fadePopups", enabled = false })
 
 hl.layer_rule({
-	name = "quickshell-picker-no-anim",
-	match = { namespace = "^quickshell-picker$" },
+	name = "quickshell-overlay-no-anim",
+	match = { namespace = "^quickshell-(picker|notifications)$" },
 	no_anim = true,
 })

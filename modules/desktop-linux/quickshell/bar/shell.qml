@@ -28,6 +28,8 @@ ShellRoot {
         }
     }
 
+    Toasts {}
+
     LazyLoader {
         active: Pickers.provider !== null && Pickers.anchor === null
 

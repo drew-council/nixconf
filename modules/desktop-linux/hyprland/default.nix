@@ -24,7 +24,6 @@
         networkmanagerapplet # network tray applet
         blueman # bluetooth manager
         pavucontrol # audio mixer
-        swaynotificationcenter # notification center
         libnotify # send desktop notifications
         hyprpolkitagent # polkit authentication prompts
         wl-clipboard # clipboard CLI

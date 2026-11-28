@@ -5,7 +5,7 @@ import "Fuzzy.js" as Fuzzy
 
 // Fuzzy-searchable list for a picker provider.
 // A provider has prompt, glyph, items, and activate(item).
-// Each item has label and optionally detail, search, icon, glyph, and selected.
+// Each item has label and optionally detail, search, icon, glyph, selected, and weight.
 Rectangle {
     id: root
 
@@ -21,18 +21,18 @@ Rectangle {
 
     // Start on the selected item, such as the active sink, until the user types.
     // ListView resets its index when the model changes, so set it after that.
-    onResultsChanged: Qt.callLater(() => {
-        current = query === "" ? Math.max(0, results.findIndex(r => r.item.selected)) : 0;
-        list.currentIndex = current;
-    })
+    // A Timer, unlike Qt.callLater, dies with the view when a picker closes.
+    onResultsChanged: resetCurrent.restart()
     onCurrentChanged: list.currentIndex = current
 
     function accept() {
         const result = results[current];
         if (!result)
             return;
+        // Closing clears provider, so hold on to it.
+        const target = provider;
         closeRequested();
-        provider.activate(result.item);
+        target.activate(result.item);
     }
 
     function move(delta) {
@@ -49,6 +49,15 @@ Rectangle {
     radius: 12
 
     Component.onCompleted: input.forceActiveFocus()
+
+    Timer {
+        id: resetCurrent
+        interval: 0
+        onTriggered: {
+            root.current = root.query === "" ? Math.max(0, root.results.findIndex(r => r.item.selected)) : 0;
+            list.currentIndex = root.current;
+        }
+    }
 
     Item {
         id: header

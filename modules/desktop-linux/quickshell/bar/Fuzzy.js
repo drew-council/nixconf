@@ -27,10 +27,13 @@ function match(query, text) {
 
 // filter ranks items by how well query matches their label,
 // falling back to their search text with a penalty.
-// Results keep the original order when query is empty or scores tie.
+// An item's weight, such as a launch count, breaks near ties,
+// and orders the items when query is empty.
+// Results otherwise keep the original order.
 function filter(items, query) {
     if (query.trim() === "")
-        return items.map(item => ({ item, positions: [] }));
+        return items.map(item => ({ item, positions: [] }))
+            .sort((a, b) => (b.item.weight ?? 0) - (a.item.weight ?? 0));
     const results = [];
     items.forEach((item, index) => {
         let m = match(query, item.label);
@@ -39,8 +42,10 @@ function filter(items, query) {
             if (m)
                 m = { score: m.score - 5, positions: [] };
         }
-        if (m)
-            results.push({ item, positions: m.positions, score: m.score, index });
+        if (m) {
+            const score = m.score + Math.log2(1 + (item.weight ?? 0)) * 0.4;
+            results.push({ item, positions: m.positions, score, index });
+        }
     });
     return results.sort((a, b) => b.score - a.score || a.index - b.index);
 }
